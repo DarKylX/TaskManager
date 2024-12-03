@@ -5,7 +5,6 @@ class UserProfile(AbstractUser):
     nickname = models.CharField(max_length=100)
     email = models.EmailField(max_length=320)
 
-    # Уникальные имена для обратных связей
     groups = models.ManyToManyField(
         Group,
         related_name='todolist_user_groups',
