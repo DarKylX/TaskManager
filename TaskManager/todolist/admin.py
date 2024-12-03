@@ -10,8 +10,8 @@ admin.site.register(Task, TaskAdmin)
 
 
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('nickname', 'email', 'is_staff', 'is_active')
-    search_fields = ('nickname', 'email')
+    list_display = ('username', 'email', 'is_staff', 'is_active')
+    search_fields = ('username', 'email')
 
 admin.site.register(UserProfile, UserProfileAdmin)
 
