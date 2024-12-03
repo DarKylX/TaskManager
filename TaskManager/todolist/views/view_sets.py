@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+
 from TaskManager.todolist.models import UserProfile, UserBIO, Project, UserProfileProject, Task, Subtask, Comment
 from TaskManager.todolist.serializers.todolists import UserProfileSerializer, UserBiosSerializer, ProjectSerializer, UserProfileProjectSerializer, TaskSerializer, SubtaskSerializer, CommentSerializer
 
@@ -25,7 +26,6 @@ class UserProfileProjectViewSet(viewsets.ModelViewSet):
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
-
 
 class SubtaskViewSet(viewsets.ModelViewSet):
     queryset = Subtask.objects.all()
