@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import make_password
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -5,6 +6,19 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 
 class UserProfile(AbstractUser):
     email = models.EmailField(max_length=320, verbose_name = "Электронная почта")
+    nickname = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='Никнейм'
+    )
+
+    def save(self, *args, **kwargs):
+        # Автоматически заполняем никнейм, если он не указан
+        if not self.nickname:
+            self.nickname = self.username
+        super().save(*args, **kwargs)
+
     groups = models.ManyToManyField(
         Group,
         related_name='todolist_user_groups',
@@ -21,8 +35,18 @@ class UserProfile(AbstractUser):
         verbose_name='user permissions',
     )
 
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+
+
+
+    def check_password(self, raw_password):
+        from django.contrib.auth.hashers import check_password
+        return check_password(raw_password, self.password)
+
     def __str__(self):
         return self.username
+
     class Meta:
         verbose_name = ('Пользователь')
         verbose_name_plural = ('Пользователи')
@@ -114,16 +138,37 @@ class Task(models.Model):
     category = models.CharField(('Категория'), max_length=100)
 
     def clean(self):
-        # Дополнительная валидация на уровне модели
-        if self.due_date < timezone.now():
+        # Валидация даты
+        if self.due_date and self.due_date < timezone.now():
             raise ValidationError({
                 'due_date': 'Крайний срок не может быть в прошлом.'
             })
+
+        # Валидация уникальности названия задачи для пользователя
+        if self.assignee:
+            # Исключаем текущий экземпляр при обновлении
+            existing_tasks = Task.objects.filter(
+                name=self.name,
+                assignee=self.assignee
+            ).exclude(pk=self.pk)
+
+            if existing_tasks.exists():
+                raise ValidationError({
+                    'name': 'Задача с таким названием уже существует у этого пользователя.'
+                })
 
     def save(self, *args, **kwargs):
         # Вызов метода clean перед сохранением
         self.full_clean()
         return super().save(*args, **kwargs)
+
+    def validate_subtasks_count(self):
+        # Проверка количества подзадач
+        subtask_count = self.subtask_set.count()
+        if subtask_count > 5:
+            raise ValidationError({
+                'subtasks': 'Максимальное количество подзадач - 5'
+            })
 
     def __str__(self):
         return self.name
@@ -144,6 +189,22 @@ class Subtask(models.Model):
     description = models.TextField(('Описание'))
     status = models.CharField(('Статус'), max_length=20, choices=STATUS_CHOICES, default='NEW')
     task = models.ForeignKey(Task, on_delete=models.CASCADE, verbose_name=('Задача'))
+
+    def clean(self):
+        # Проверка количества подзадач перед сохранением
+        task = self.task
+        subtask_count = task.subtask_set.count()
+
+        # Если это новая подзадача и количество уже 5
+        if not self.pk and subtask_count >= 5:
+            raise ValidationError({
+                'task': 'Невозможно добавить подзадачу. Достигнут максимум (5 подзадач).'
+            })
+
+    def save(self, *args, **kwargs):
+        # Вызов метода clean перед сохранением
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
