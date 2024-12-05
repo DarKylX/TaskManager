@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import serializers
 from ..models import UserProfile, UserBIO, Project, UserProfileProject, Task, Subtask, Comment
 
@@ -72,6 +73,19 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
+
+    def validate_due_date(self, value):
+        # Проверка, что дата окончания не раньше текущей
+        if value and value < timezone.now().date():
+            raise serializers.ValidationError("Дата окончания не может быть в прошлом.")
+        return value
+
+    def validate_priority(self, value):
+        # Проверка, что приоритет в пределах 1-5
+        if value not in ['1', '2', '3', '4', '5']:
+            raise serializers.ValidationError("Приоритет должен быть от 1 до 5.")
+        return value
+
 
     def validate(self, attrs):
         # Получаем текущего пользователя

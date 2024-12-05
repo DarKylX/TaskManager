@@ -111,7 +111,7 @@ class Task(models.Model):
 
     def clean(self):
         # Валидация даты
-        if self.due_date and self.due_date < timezone.now():
+        if self.due_date and self.due_date < timezone.now().date():
             raise ValidationError({
                 'due_date': 'Крайний срок не может быть в прошлом.'
             })
