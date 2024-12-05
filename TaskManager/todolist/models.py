@@ -6,34 +6,7 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 
 class UserProfile(AbstractUser):
     email = models.EmailField(max_length=320, verbose_name = "Электронная почта")
-    nickname = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        verbose_name='Никнейм'
-    )
 
-    def save(self, *args, **kwargs):
-        # Автоматически заполняем никнейм, если он не указан
-        if not self.nickname:
-            self.nickname = self.username
-        super().save(*args, **kwargs)
-
-    groups = models.ManyToManyField(
-        Group,
-        related_name='todolist_user_groups',
-        blank=True,
-        help_text='The groups this user belongs to.',
-        verbose_name='groups',
-    )
-
-    user_permissions = models.ManyToManyField(
-        Permission,
-        related_name='todolist_user_permissions',
-        blank=True,
-        help_text='Specific permissions for this user.',
-        verbose_name='user permissions',
-    )
 
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
@@ -62,7 +35,6 @@ class UserBIO(models.Model):
     ]
 
     user = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name='bio')
-    full_name = models.CharField('ФИО', max_length=255)
     company = models.CharField('Компания', max_length=255)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='USER', verbose_name = "Роль")
     age = models.IntegerField('Возраст')
@@ -129,9 +101,9 @@ class Task(models.Model):
     description = models.TextField(('Описание'))
     status = models.CharField(('Статус'), max_length=20, choices=STATUS_CHOICES, default='NEW')
     priority = models.CharField(('Приоритет'), max_length=1, choices=PRIORITY_CHOICES, default='1')
-    due_date = models.DateTimeField(('Крайний срок'))
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=('Дата создания'))
-    updated_at = models.DateTimeField(auto_now=True, verbose_name=('Дата обновления'))
+    due_date = models.DateField(('Крайний срок'))
+    created_at = models.DateField(auto_now_add=True, verbose_name=('Дата создания'))
+    updated_at = models.DateField(auto_now=True, verbose_name=('Дата обновления'))
     project = models.ForeignKey(Project, on_delete=models.CASCADE, verbose_name=('Проект'))
     assignee = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True,
                                  verbose_name=('Исполнитель'))
