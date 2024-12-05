@@ -15,9 +15,8 @@ from ..serializers.todolists import (
     TaskSerializer,
     SubtaskSerializer,
     CommentSerializer,
-    SubtaskCreateSerializer
-)
 
+)
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
@@ -38,6 +37,29 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
+    @swagger_auto_schema(
+        operation_summary="Обновление профиля пользователя",
+        request_body=UserProfileSerializer,
+        responses={200: UserProfileSerializer}
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Частичное обновление профиля пользователя",
+        request_body=UserProfileSerializer,
+        responses={200: UserProfileSerializer}
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Удаление профиля пользователя",
+        responses={204: 'No Content'}
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
 
 class UserBIOViewSet(viewsets.ModelViewSet):
     queryset = UserBIO.objects.all()
@@ -49,6 +71,37 @@ class UserBIOViewSet(viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Создание новой биографии пользователя",
+        request_body=UserBiosSerializer,
+        responses={201: UserBiosSerializer}
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Обновление биографии пользователя",
+        request_body=UserBiosSerializer,
+        responses={200: UserBiosSerializer}
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Частичное обновление биографии пользователя",
+        request_body=UserBiosSerializer,
+        responses={200: UserBiosSerializer}
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Удаление биографии пользователя",
+        responses={204: 'No Content'}
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -70,6 +123,29 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
+    @swagger_auto_schema(
+        operation_summary="Обновление проекта",
+        request_body=ProjectSerializer,
+        responses={200: ProjectSerializer}
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Частичное обновление проекта",
+        request_body=ProjectSerializer,
+        responses={200: ProjectSerializer}
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Удаление проекта",
+        responses={204: 'No Content'}
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
 
 class UserProfileProjectViewSet(viewsets.ModelViewSet):
     queryset = UserProfileProject.objects.all()
@@ -81,6 +157,37 @@ class UserProfileProjectViewSet(viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Создание новой связи между пользователем и проектом",
+        request_body=UserProfileProjectSerializer,
+        responses={201: UserProfileProjectSerializer}
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Обновление связи между пользователем и проектом",
+        request_body=UserProfileProjectSerializer,
+        responses={200: UserProfileProjectSerializer}
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Частичное обновление связи между пользователем и проектом",
+        request_body=UserProfileProjectSerializer,
+        responses={200: UserProfileProjectSerializer}
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Удаление связи между пользователем и проектом",
+        responses={204: 'No Content'}
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -103,11 +210,34 @@ class TaskViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        operation_summary="Обновление задачи",
+        request_body=TaskSerializer,
+        responses={200: TaskSerializer}
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Частичное обновление задачи",
+        request_body=TaskSerializer,
+        responses={200: TaskSerializer}
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Удаление задачи",
+        responses={204: 'No Content'}
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
+    # Custom actions
+    @swagger_auto_schema(
         operation_summary="Получение задач, которые должны быть выполнены в ближайшие 7 дней",
     )
     @action(detail=False, methods=['GET'])
     def due_soon(self, request):
-        """Получение задач, которые должны быть выполнены в ближайшие 7 дней."""
         seven_days_from_now = timezone.now() + timedelta(days=7)
         tasks = Task.objects.filter(due_date__lte=seven_days_from_now, status='NEW')
         serializer = self.get_serializer(tasks, many=True)
@@ -122,58 +252,16 @@ class TaskViewSet(viewsets.ModelViewSet):
         ]
     )
     @action(detail=False, methods=['GET'])
-    def search_description(self, request):
-        """Поиск задач, содержащих определенное слово в описании."""
-        search_term = request.query_params.get('search_term', None)
-        if not search_term:
-            return Response({"detail": "Search term is required."}, status=status.HTTP_400_BAD_REQUEST)
-
+    def search(self, request):
+        search_term = request.query_params.get('search_term', '')
         tasks = Task.objects.filter(description__icontains=search_term)
-        serializer = self.get_serializer(tasks, many=True)
-        return Response(serializer.data)
-
-    @swagger_auto_schema(
-        operation_summary="Получение задач с высоким приоритетом и статусом 'новая' или 'в процессе'",
-        responses={200: TaskSerializer(many=True)}
-    )
-    @action(detail=False, methods=['GET'])
-    def high_priority_incomplete(self, request):
-        """Получение задач, которые не выполнены и имеют высокий приоритет."""
-        tasks = Task.objects.filter(status__in=['NEW', 'BACKLOG', 'IN_PROGRESS'],
-                                    priority='5')  # Assuming '5' is high priority
-        serializer = self.get_serializer(tasks, many=True)
-        return Response(serializer.data)
-
-    @swagger_auto_schema(
-        operation_summary="Получение задач с высоким приоритетом или с датой выполнения завтра",
-        responses={200: TaskSerializer(many=True)}
-    )
-    @action(detail=False, methods=['GET'])
-    def high_priority_or_due_tomorrow(self, request):
-        """Найти все задачи, которые либо имеют высокий приоритет и не завершены, либо задачи, которые должны быть выполнены завтра."""
-        tomorrow = timezone.now() + timedelta(days=1)
-        tasks = Task.objects.filter(
-            (Q(priority='5', status__in=['NEW', 'BACKLOG', 'IN_PROGRESS'])) |
-            (Q(due_date__date=tomorrow.date()))
-        )
-        serializer = self.get_serializer(tasks, many=True)
-        return Response(serializer.data)
-
-    @swagger_auto_schema(
-        operation_summary="Получение задач, которые не принадлежат текущему пользователю",
-        responses={200: TaskSerializer(many=True)}
-    )
-    @action(detail=False, methods=['GET'])
-    def not_belongs_to_user(self, request):
-        """Найти все задачи, которые не принадлежат текущему пользователю, но имеют статус "в процессе" или "отменены"."""
-        user = request.user
-        tasks = Task.objects.exclude(assignee=user).filter(status__in=['IN_PROGRESS', 'BACKLOG'])  # Adjusted status
         serializer = self.get_serializer(tasks, many=True)
         return Response(serializer.data)
 
 
 class SubtaskViewSet(viewsets.ModelViewSet):
     queryset = Subtask.objects.all()
+    serializer_class = SubtaskSerializer
 
     @swagger_auto_schema(
         operation_summary="Получение всех подзадач",
@@ -184,19 +272,34 @@ class SubtaskViewSet(viewsets.ModelViewSet):
 
     @swagger_auto_schema(
         operation_summary="Создание новой подзадачи",
-        request_body=SubtaskCreateSerializer,
-        responses={201: SubtaskCreateSerializer}
+        request_body=SubtaskSerializer,
+        responses={201: SubtaskSerializer}
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
     @swagger_auto_schema(
         operation_summary="Обновление подзадачи",
-        request_body=SubtaskCreateSerializer,
-        responses={200: SubtaskCreateSerializer}
+        request_body=SubtaskSerializer,
+        responses={200: SubtaskSerializer}
     )
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Частичное обновление подзадачи",
+        request_body=SubtaskSerializer,
+        responses={200: SubtaskSerializer}
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Удаление подзадачи",
+        responses={204: 'No Content'}
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -217,3 +320,26 @@ class CommentViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Обновление комментария",
+        request_body=CommentSerializer,
+        responses={200: CommentSerializer}
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Частичное обновление комментария",
+        request_body=CommentSerializer,
+        responses={200: CommentSerializer}
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Удаление комментария",
+        responses={204: 'No Content'}
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
