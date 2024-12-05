@@ -84,8 +84,8 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(UserBIO)
 class UserBIOAdmin(admin.ModelAdmin):
-    list_display = ('full_name', 'role', 'age', 'user')
-    search_fields = ('full_name', 'user__username')
+    list_display = ('role', 'age', 'user')
+    search_fields = ('user__username',)
 
 
 @admin.register(Project)
