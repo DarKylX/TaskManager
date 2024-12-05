@@ -1,5 +1,5 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from django.utils import timezone
 from ..models import UserProfile, UserBIO, Project, UserProfileProject, Task, Subtask, Comment
 
 
@@ -10,10 +10,37 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class UserBiosSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all(), required=True)
+
     class Meta:
         model = UserBIO
-        fields = '__all__'
+        fields = ['user', 'company', 'role', 'age']
 
+    def create(self, validated_data):
+        user = validated_data.get('user')
+
+        # Проверяем, существует ли уже биография для этого пользователя
+        user_bio = UserBIO.objects.filter(user=user).first()
+
+        # Если биография существует, обновляем ее, иначе создаем новую
+        if user_bio:
+            # Обновляем данные существующей биографии
+            user_bio.company = validated_data.get('company', user_bio.company)
+            user_bio.role = validated_data.get('role', user_bio.role)
+            user_bio.age = validated_data.get('age', user_bio.age)
+            user_bio.save()
+            return user_bio
+        else:
+            # Если биографии нет, создаем новую
+            user_bio = UserBIO.objects.create(**validated_data)
+            return user_bio
+
+    def update(self, instance, validated_data):
+        instance.company = validated_data.get('company', instance.company)
+        instance.role = validated_data.get('role', instance.role)
+        instance.age = validated_data.get('age', instance.age)
+        instance.save()
+        return instance
 
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
@@ -105,8 +132,25 @@ class SubtaskCreateSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate(self, attrs):
-        # Получаем задачу
         task = attrs.get('task')
+        subtask_name = attrs.get('name')
+
+        # Если это создание новой подзадачи
+        if not self.instance:
+            # Проверяем, не существует ли подзадача с таким же названием для этой задачи
+            existing_subtask = Subtask.objects.filter(task=task, name=subtask_name).exists()
+            if existing_subtask:
+                raise serializers.ValidationError({
+                    "name": "Подзадача с таким именем уже существует для этой задачи."
+                })
+        else:
+            # Если это обновление, проверяем уникальность имени подзадачи в пределах задачи
+            subtask_pk = attrs.get('pk')
+            existing_subtask = Subtask.objects.filter(task=task, name=subtask_name).exclude(pk=subtask_pk).exists()
+            if existing_subtask:
+                raise serializers.ValidationError({
+                    "name": "Подзадача с таким именем уже существует для этой задачи."
+                })
 
         # Получаем количество текущих подзадач
         subtask_count = Subtask.objects.filter(task=task).count()
