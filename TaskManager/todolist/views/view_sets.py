@@ -1,10 +1,12 @@
-from datetime import timezone, timedelta
+from datetime import timedelta
+from django.utils import timezone
 from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
 
 from ..models import UserProfile, UserBIO, Project, UserProfileProject, Task, Subtask, Comment
 from ..serializers.todolists import (
@@ -14,7 +16,7 @@ from ..serializers.todolists import (
     UserProfileProjectSerializer,
     TaskSerializer,
     SubtaskSerializer,
-    CommentSerializer,
+    CommentSerializer, SubtaskCreateSerializer,
 
 )
 
@@ -237,7 +239,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         operation_summary="Получение задач, которые должны быть выполнены в ближайшие 7 дней",
     )
     @action(detail=False, methods=['GET'])
-    def due_soon(self, request):
+    def due_week(self, request):
         seven_days_from_now = timezone.now() + timedelta(days=7)
         tasks = Task.objects.filter(due_date__lte=seven_days_from_now, status='NEW')
         serializer = self.get_serializer(tasks, many=True)
@@ -262,6 +264,12 @@ class TaskViewSet(viewsets.ModelViewSet):
 class SubtaskViewSet(viewsets.ModelViewSet):
     queryset = Subtask.objects.all()
     serializer_class = SubtaskSerializer
+
+    def get_serializer_class(self):
+
+        if self.action in ['create', 'update', 'partial_update']:
+            return SubtaskCreateSerializer
+        return SubtaskSerializer
 
     @swagger_auto_schema(
         operation_summary="Получение всех подзадач",
@@ -343,3 +351,4 @@ class CommentViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
+
