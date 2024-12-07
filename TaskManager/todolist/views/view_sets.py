@@ -1,12 +1,18 @@
 from datetime import timedelta
+
+import django_filters
+from django.core.serializers import serialize
 from django.utils import timezone
 from django.db.models import Q
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-
+from ..filters import TaskFilter, UserBIOFilter
 
 from ..models import UserProfile, UserBIO, Project, UserProfileProject, Task, Subtask, Comment
 from ..serializers.todolists import (
@@ -23,6 +29,7 @@ from ..serializers.todolists import (
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+
 
     @swagger_auto_schema(
         operation_summary="Получение всех профилей пользователей",
@@ -66,6 +73,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 class UserBIOViewSet(viewsets.ModelViewSet):
     queryset = UserBIO.objects.all()
     serializer_class = UserBiosSerializer
+    filter_backends = [DjangoFilterBackend,]
+    filterset_class = UserBIOFilter
 
     @swagger_auto_schema(
         operation_summary="Получение всех биографий пользователей",
@@ -109,6 +118,8 @@ class UserBIOViewSet(viewsets.ModelViewSet):
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['name', 'description']
 
     @swagger_auto_schema(
         operation_summary="Получение всех проектов",
@@ -191,10 +202,18 @@ class UserProfileProjectViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 class TaskViewSet(viewsets.ModelViewSet):
+
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
+    filter_backends = (django_filters.rest_framework.DjangoFilterBackend,)  # Указываем, что фильтры будут использоваться
+    filterset_class = TaskFilter  # Подключаем фильтр
+    pagination_class = StandardResultsSetPagination
 
     @swagger_auto_schema(
         operation_summary="Получение всех задач",
@@ -253,13 +272,41 @@ class TaskViewSet(viewsets.ModelViewSet):
                               type=openapi.TYPE_STRING)
         ]
     )
-    @action(detail=False, methods=['GET'])
-    def search(self, request):
-        search_term = request.query_params.get('search_term', '')
-        tasks = Task.objects.filter(description__icontains=search_term)
-        serializer = self.get_serializer(tasks, many=True)
-        return Response(serializer.data)
+    @action(detail=False, methods=['GET'], url_path='search')
+    def get_search(self, request):
+        queryset = self.get_queryset()
+        # Получение задач, которые должны быть выполнены в ближайшие 7 дней
+        if 'due_soon' in self.request.query_params:
+            today = timezone.now().date()
+            seven_days_later = today + timedelta(days=7)
+            queryset = queryset.filter(due_date__gte=today, due_date__lte=seven_days_later)
 
+        # Фильтрация задач с высоким приоритетом или с датой выполнения завтра
+        if 'priority_or_due_tomorrow' in self.request.query_params:
+            tomorrow = timezone.now().date() + timedelta(days=1)
+            queryset = queryset.filter(
+                Q(priority='1') | Q(due_date=tomorrow)
+            )
+
+        # Фильтрация задач, которые не выполнены и имеют высокий приоритет
+        if 'high_priority' in self.request.query_params:
+            queryset = queryset.filter(
+                ~Q(status='DONE') & Q(priority='1')
+            )
+
+        # Задачи, которые не принадлежат текущему пользователю и имеют статус "в процессе" или "отменены"
+        if 'not_assigned_to_user' in self.request.query_params:
+            user = self.request.user
+            queryset = queryset.filter(
+                ~Q(assignee=user) & Q(status__in=['IN_PROGRESS', 'CANCELED'])
+            )
+
+        # Фильтрация по параметру 'search' (по title или description)
+        if 'search_term' in self.request.query_params:
+            search_term = self.request.query_params.get('search_term', '')
+            queryset = queryset.filter(Q(name__icontains=search_term) | Q(description__icontains=search_term))
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 class SubtaskViewSet(viewsets.ModelViewSet):
     queryset = Subtask.objects.all()
