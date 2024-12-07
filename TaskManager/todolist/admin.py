@@ -3,6 +3,8 @@ from django.utils import timezone
 from django.db.models import Q
 from datetime import timedelta
 from .models import UserProfile, UserBIO, Project, UserProfileProject, Task, Subtask, Comment
+from import_export.admin import ImportExportModelAdmin
+from .resources import TaskResource
 
 
 class HighPriorityFilter(admin.SimpleListFilter):
@@ -34,10 +36,11 @@ class HighPriorityFilter(admin.SimpleListFilter):
 
 
 @admin.register(Task)
-class TaskAdmin(admin.ModelAdmin):
+class TaskAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     list_display = ('name', 'description', 'status', 'priority', 'due_date', 'assignee')
     search_fields = ('name', 'description')
     list_filter = ('status', 'priority', HighPriorityFilter)
+    resource_class = TaskResource
 
     # Действия
     actions = [
