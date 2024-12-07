@@ -1,3 +1,5 @@
+from math import asinh
+
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
@@ -88,13 +90,8 @@ class TaskSerializer(serializers.ModelSerializer):
 
 
     def validate(self, attrs):
-        # Получаем текущего пользователя
-        user = self.context['request'].user
-
-        # Проверка уникальности названия задачи для пользователя
-        # Важно: различаем создание новой задачи и обновление существующей
         task_name = attrs.get('name')
-
+        user = attrs.get('assignee')
         # Если это создание новой задачи
         if not self.instance:
             # Проверяем существование задачи с таким же именем для этого пользователя
@@ -104,9 +101,7 @@ class TaskSerializer(serializers.ModelSerializer):
             ).exists()
 
             if existing_task:
-                raise serializers.ValidationError({
-                    "name": "Задача с таким названием уже существует для этого пользователя."
-                })
+                raise serializers.ValidationError("Задача с таким названием уже существует для этого пользователя.")
 
         return attrs
 
