@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'drf_yasg',
     'todolist',
     'rest_framework.authtoken',
+    'django_filters',
+
 ]
 
 MIDDLEWARE = [
