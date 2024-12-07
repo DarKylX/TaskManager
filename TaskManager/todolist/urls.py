@@ -24,6 +24,8 @@ router.register(r'userprofile', UserProfileViewSet)
 router.register(r'userbio', UserBIOViewSet)
 router.register(r'userprofileproject', UserProfileProjectViewSet)
 
+
 urlpatterns = [
     path('', include(router.urls)),
+    path('task/status/<str:status>/', TaskViewSet.as_view({'get': 'list'})),
 ]
