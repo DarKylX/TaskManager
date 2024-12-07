@@ -3,6 +3,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser, Group, Permission
+from simple_history.models import HistoricalRecords
 
 class UserProfile(AbstractUser):
     email = models.EmailField(max_length=320, verbose_name = "Электронная почта")
@@ -23,6 +24,8 @@ class UserProfile(AbstractUser):
     class Meta:
         verbose_name = ('Пользователь')
         verbose_name_plural = ('Пользователи')
+
+    history = HistoricalRecords()
 
 
 class UserBIO(models.Model):
@@ -47,6 +50,8 @@ class UserBIO(models.Model):
         verbose_name = ('О пользователе')
         verbose_name_plural = ('О пользователях')
 
+    history = HistoricalRecords()
+
 
 
 class Project(models.Model):
@@ -70,6 +75,8 @@ class Project(models.Model):
         verbose_name = ('Проект')
         verbose_name_plural = ('Проекты')
 
+    history = HistoricalRecords()
+
 
 class UserProfileProject(models.Model):
     user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, verbose_name=('Пользователь'))
@@ -79,6 +86,8 @@ class UserProfileProject(models.Model):
         unique_together = ('user_profile', 'project')
         verbose_name = ('Проект пользователя')
         verbose_name_plural = ('Проекты пользователей')
+
+    history = HistoricalRecords()
 
 
 class Task(models.Model):
@@ -109,30 +118,9 @@ class Task(models.Model):
                                  verbose_name=('Исполнитель'))
     category = models.CharField(('Категория'), max_length=100)
 
-    def clean(self):
-        # Валидация даты
-        if self.due_date and self.due_date < timezone.now().date():
-            raise ValidationError({
-                'due_date': 'Крайний срок не может быть в прошлом.'
-            })
+    history = HistoricalRecords()
 
-        # Валидация уникальности названия задачи для пользователя
-        if self.assignee:
-            # Исключаем текущий экземпляр при обновлении
-            existing_tasks = Task.objects.filter(
-                name=self.name,
-                assignee=self.assignee
-            ).exclude(pk=self.pk)
 
-            if existing_tasks.exists():
-                raise ValidationError({
-                    'name': 'Задача с таким названием уже существует у этого пользователя.'
-                })
-
-    def save(self, *args, **kwargs):
-        # Вызов метода clean перед сохранением
-        self.full_clean()
-        return super().save(*args, **kwargs)
 
     def validate_subtasks_count(self):
         # Проверка количества подзадач
@@ -185,6 +173,7 @@ class Subtask(models.Model):
         verbose_name = ('Подзадача')
         verbose_name_plural = ('Подзадачи')
 
+    history = HistoricalRecords()
 
 class Comment(models.Model):
     text = models.TextField(('Текст комментария'))
@@ -200,5 +189,6 @@ class Comment(models.Model):
         verbose_name = ('Комментарий')
         verbose_name_plural = ('Комментарии')
 
+    history = HistoricalRecords()
 
 
