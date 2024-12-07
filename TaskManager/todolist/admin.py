@@ -25,7 +25,7 @@ class HighPriorityFilter(admin.SimpleListFilter):
 
         if self.value() == 'due_tomorrow':
             tomorrow = timezone.now() + timedelta(days=1)
-            return queryset.filter(due_date__date=tomorrow.date())
+            return queryset.filter(due_date__gte=tomorrow, due_date__lt=tomorrow + timedelta(days=1))
 
         if self.value() == 'not_my_tasks':
             return queryset.exclude(assignee=request.user)
