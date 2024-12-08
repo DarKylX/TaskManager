@@ -4,7 +4,7 @@ from .models import Task
 class TaskResource(resources.ModelResource):
     class Meta:
         model = Task
-        fields = ('id', 'name', 'description', 'status', 'priority', 'due_date')
+        fields = ('name', 'description', 'status', 'priority', 'due_date')
 
     def get_export_queryset(self, request=None):
         """Возвращает набор данных для экспорта, включая только задачи с высоким приоритетом."""

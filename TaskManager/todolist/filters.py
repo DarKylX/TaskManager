@@ -6,13 +6,13 @@ from datetime import timedelta
 
 class TaskFilter(filters.FilterSet):
 
-    status = django_filters.CharFilter(field_name='status', lookup_expr='exact')
+    status = django_filters.CharFilter(field_name='status', lookup_expr='exact', label="Статус")
 
-    due_date = filters.DateFilter(field_name='due_date', lookup_expr='exact')
+    due_date = filters.DateFilter(field_name='due_date', lookup_expr='exact', label="Дедлайн")
 
-    due_date_range = filters.DateFromToRangeFilter(field_name='due_date')
+    due_date_range = filters.DateFromToRangeFilter(field_name='due_date', label="Диапазон дедлайнов")
 
-    current_user = filters.BooleanFilter(method='filter_by_current_user', label="Filter by current user")
+    current_user = filters.BooleanFilter(method='filter_by_current_user', label="Поиск по авторизованному человеку")
 
 
     class Meta:

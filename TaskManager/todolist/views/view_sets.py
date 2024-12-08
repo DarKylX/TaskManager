@@ -294,15 +294,14 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         return Response({"detail": "Статус обновлен."}, status=status.HTTP_200_OK)
 
-    # Custom actions
     @swagger_auto_schema(
-        operation_summary="Получение задач, которые должны быть выполнены в ближайшие 7 дней",
+        operation_summary="Получение просроченных задач"
     )
     @action(detail=False, methods=['GET'])
-    def due_week(self, request):
-        seven_days_from_now = timezone.now() + timedelta(days=7)
-        tasks = Task.objects.filter(due_date__lte=seven_days_from_now, status='NEW')
-        serializer = self.get_serializer(tasks, many=True)
+    def overdue_tasks(self, request):
+        today = timezone.now().date()
+        overdue_tasks = Task.objects.filter(due_date__lt=today, status__in=['NEW', 'BACKLOG', 'IN_PROGRESS'])
+        serializer = self.get_serializer(overdue_tasks, many=True)
         return Response(serializer.data)
 
     @swagger_auto_schema(
@@ -326,13 +325,13 @@ class TaskViewSet(viewsets.ModelViewSet):
         if 'priority_or_due_tomorrow' in self.request.query_params:
             tomorrow = timezone.now().date() + timedelta(days=1)
             queryset = queryset.filter(
-                Q(priority='1') | Q(due_date=tomorrow)
+                Q(priority='5') | Q(due_date=tomorrow)
             )
 
         # Фильтрация задач, которые не выполнены и имеют высокий приоритет
         if 'high_priority' in self.request.query_params:
             queryset = queryset.filter(
-                ~Q(status='DONE') & Q(priority='1')
+                ~Q(status='DONE') & Q(priority='5')
             )
 
         # Задачи, которые не принадлежат текущему пользователю и имеют статус "в процессе" или "отменены"
