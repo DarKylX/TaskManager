@@ -1,7 +1,5 @@
 from datetime import timedelta
-
 import django_filters
-from django.core.serializers import serialize
 from django.utils import timezone
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
@@ -12,6 +10,8 @@ from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from simple_history.utils import update_change_reason
+
 from ..filters import TaskFilter, UserBIOFilter
 
 from ..models import UserProfile, UserBIO, Project, UserProfileProject, Task, Subtask, Comment
@@ -22,7 +22,7 @@ from ..serializers.todolists import (
     UserProfileProjectSerializer,
     TaskSerializer,
     SubtaskSerializer,
-    CommentSerializer, SubtaskCreateSerializer,
+    CommentSerializer, SubtaskCreateSerializer, HistoricalTaskSerializer,
 
 )
 
@@ -209,7 +209,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 class TaskViewSet(viewsets.ModelViewSet):
 
-    queryset = Task.objects.all()
+    queryset = Task.objects.all().order_by('id')
     serializer_class = TaskSerializer
     filter_backends = (django_filters.rest_framework.DjangoFilterBackend,)  # Указываем, что фильтры будут использоваться
     filterset_class = TaskFilter  # Подключаем фильтр
@@ -236,6 +236,17 @@ class TaskViewSet(viewsets.ModelViewSet):
         responses={200: TaskSerializer}
     )
     def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # Проверка измененных данных
+        changes = []
+        for field, value in request.data.items():
+            if hasattr(instance, field) and getattr(instance, field) != value:
+                changes.append(f"{field}: {getattr(instance, field)} -> {value}")
+
+        # Записываем причину изменения
+        reason = "; ".join(changes) if changes else "Изменение данных"
+        update_change_reason(instance, reason)
         return super().update(request, *args, **kwargs)
 
     @swagger_auto_schema(
@@ -252,6 +263,36 @@ class TaskViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="Получение истории задачи",
+        responses={200: TaskSerializer(many=True)}
+    )
+    @action(methods=['get'], detail=True)
+    def history(self, request, pk=None):
+        task = self.get_object()
+        history = task.history.all()  # Получаем историю задачи
+        serializer = HistoricalTaskSerializer(history, many=True)  # Сериализуем историю
+        return Response(serializer.data)
+
+
+    @swagger_auto_schema(
+        operation_summary="Изменение статуса задачи",
+        request_body=TaskSerializer,
+        responses={200: openapi.Response('Success', TaskSerializer)}
+
+    )
+    @action(methods=['post'], detail=True)
+    def change_status(self, request, pk=None, status=None):
+        task = self.get_object()
+        if not status:
+            return Response({"detail": "Необходим новый статус для задачи."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Обновляем статус задачи
+        task.status = status
+        task.save()
+
+        return Response({"detail": "Статус обновлен."}, status=status.HTTP_200_OK)
 
     # Custom actions
     @swagger_auto_schema(
