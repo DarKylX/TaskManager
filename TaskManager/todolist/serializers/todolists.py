@@ -88,12 +88,25 @@ class TaskSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Приоритет должен быть от 1 до 5.")
         return value
 
-
     def validate(self, attrs):
         task_name = attrs.get('name')
         user = attrs.get('assignee')
+
+        # Проверяем, является ли это обновлением существующей задачи
+        if self.instance:
+            # Если это обновление, проверяем, изменилось ли имя задачи
+            if 'name' in attrs and attrs['name'] != self.instance.name:
+                print('check')
+                # Проверяем существование задачи с таким же именем для этого пользователя
+                existing_task = Task.objects.filter(
+                    name=task_name,
+                    assignee=user
+                ).exclude(pk=self.instance.pk).exists()
+
+                if existing_task:
+                    raise serializers.ValidationError("Задача с таким названием уже существует для этого пользователя.")
         # Если это создание новой задачи
-        if not self.instance:
+        else:
             # Проверяем существование задачи с таким же именем для этого пользователя
             existing_task = Task.objects.filter(
                 name=task_name,
@@ -171,3 +184,9 @@ class SubtaskCreateSerializer(serializers.ModelSerializer):
             })
 
         return attrs
+
+
+class HistoricalTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task.history.model
+        fields = ('id', 'history_date', 'history_change_reason', 'history_type', 'name', 'description', 'status', 'priority', 'due_date', 'project', 'assignee')

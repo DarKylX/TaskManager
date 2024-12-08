@@ -28,4 +28,7 @@ router.register(r'userprofileproject', UserProfileProjectViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('task/status/<str:status>/', TaskViewSet.as_view({'get': 'list'})),
+    path('task/<int:pk>/history/', TaskViewSet.as_view({'get': 'history'}), name='task-history'),
+    path('task/<int:pk>/change_status/', TaskViewSet.as_view({'post': 'change_status'}), name='task-change-status')
+
 ]
