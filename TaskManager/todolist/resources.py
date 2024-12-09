@@ -17,10 +17,10 @@ class TaskResource(resources.ModelResource):
     def get_status(self, task):
         """Преобразует поле status в более читабельный формат."""
         status_map = {
-            'NEW': 'New',
-            'BACKLOG': 'Backlog',
-            'IN_PROGRESS': 'In Progress',
-            'DONE': 'Completed',
-            'CANCELED': 'Canceled'
+            'NEW': 'Новая',
+            'BACKLOG': 'Архив',
+            'IN_PROGRESS': 'В процессе',
+            'DONE': 'Выполнена',
+            'CANCELED': 'Отменена'
         }
         return status_map.get(task.status, task.status)

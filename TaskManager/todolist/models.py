@@ -44,7 +44,7 @@ class UserBIO(models.Model):
 
 
     def __str__(self):
-        return f"О пользователе {self.user.nickname}"
+        return f"О пользователе {self.user.username}"
 
     class Meta:
         verbose_name = ('О пользователе')
@@ -183,7 +183,7 @@ class Comment(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, verbose_name=('Задача'))
 
     def __str__(self):
-        return f"Прокомментировано {self.author.nickname} на {self.task.name}"
+        return f"Прокомментировано {self.author.username} на {self.task.name}"
 
     class Meta:
         verbose_name = ('Комментарий')
