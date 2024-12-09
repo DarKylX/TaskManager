@@ -1,10 +1,13 @@
 from django.contrib import admin
+from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
 from datetime import timedelta
 from .models import UserProfile, UserBIO, Project, UserProfileProject, Task, Subtask, Comment
 from import_export.admin import ImportExportModelAdmin
 from .resources import TaskResource
+from import_export.formats.base_formats import XLSX
+
 
 
 class HighPriorityFilter(admin.SimpleListFilter):
@@ -46,9 +49,24 @@ class TaskAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     actions = [
         'get_high_priority_incomplete_tasks',
         'get_high_priority_or_due_tomorrow',
-        'get_tasks_not_belongs_to_user'
+        'get_tasks_not_belongs_to_user',
+        "export_high_priority_tasks"
     ]
 
+
+    def export_high_priority_tasks(self, request, queryset):
+        resource = self.resource_class()
+        high_priority_queryset = resource.get_export_queryset()
+        dataset = resource.export(high_priority_queryset)
+        file_format = XLSX()
+        response = file_format.export_data(dataset)
+        response_content_type = file_format.get_content_type()
+        filename = 'high_priority_tasks.xlsx'
+        response = HttpResponse(response, content_type=response_content_type)
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+    export_high_priority_tasks.short_description = "Экспорт задач с высоким приоритетом"
     def get_high_priority_incomplete_tasks(self, request, queryset):
         """Получение задач, которые не выполнены и имеют высокий приоритет."""
         tasks = queryset.filter(

@@ -14,7 +14,7 @@ class TaskResource(resources.ModelResource):
         """Преобразует поле due_date в формат "DD-MM-YYYY"."""
         return task.due_date.strftime('%d-%m-%Y')
 
-    def get_status(self, task):
+    def dehydrate_status(self, task):
         """Преобразует поле status в более читабельный формат."""
         status_map = {
             'NEW': 'Новая',
