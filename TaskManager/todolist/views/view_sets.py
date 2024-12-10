@@ -283,13 +283,16 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     )
     @action(methods=['post'], detail=True)
-    def change_status(self, request, pk=None, status=None):
+    def change_status(self, request, pk=None, **kwargs):
         task = self.get_object()
-        if not status:
+        new_status = kwargs.get('status')
+        if not new_status:
             return Response({"detail": "Необходим новый статус для задачи."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Обновляем статус задачи
-        task.status = status
+        valid_statuses = ['backlog', 'in_progress', 'done', 'new']
+        normalized_status = new_status.lower()
+        if normalized_status not in valid_statuses:
+            return Response({"detail": "Неверный статус."}, status=status.HTTP_400_BAD_REQUEST)
+        task.status = normalized_status.upper()
         task.save()
 
         return Response({"detail": "Статус обновлен."}, status=status.HTTP_200_OK)
