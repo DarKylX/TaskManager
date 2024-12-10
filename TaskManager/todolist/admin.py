@@ -42,7 +42,7 @@ class HighPriorityFilter(admin.SimpleListFilter):
 class TaskAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     list_display = ('name', 'description', 'status', 'priority', 'due_date', 'assignee')
     search_fields = ('name', 'description')
-    list_filter = ('status', 'priority', HighPriorityFilter)
+    list_filter = ('status', 'priority', HighPriorityFilter, 'due_date', 'assignee')
     resource_class = TaskResource
 
     # Действия
@@ -82,7 +82,7 @@ class TaskAdmin(ImportExportModelAdmin, admin.ModelAdmin):
         tomorrow = timezone.now() + timedelta(days=1)
         tasks = queryset.filter(
             Q(priority='5', status__in=['NEW', 'BACKLOG', 'IN_PROGRESS']) |
-            Q(due_date__date=tomorrow.date())
+            Q(due_date=tomorrow.date())
         )
         self.message_user(request, f"Найдено задач высокого приоритета или с дедлайном завтра: {tasks.count()}")
 
