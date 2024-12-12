@@ -81,6 +81,8 @@ class Project(models.Model):
 class UserProfileProject(models.Model):
     user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, verbose_name=('Пользователь'))
     project = models.ForeignKey(Project, on_delete=models.CASCADE, verbose_name=('Проект'))
+    role = models.CharField(max_length=50, blank=True, null=True, verbose_name="Роль")
+    added_on = models.DateField(auto_now_add=True, verbose_name="Дата добавления")
 
     class Meta:
         unique_together = ('user_profile', 'project')

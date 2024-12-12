@@ -37,12 +37,27 @@ class HighPriorityFilter(admin.SimpleListFilter):
 
         return queryset
 
+class SubtaskInline(admin.TabularInline):
+    model = Subtask
+    extra = 4
+    fields = ('name', 'description', 'status')
+
+
+class TaskInline(admin.TabularInline):
+    model = Task
+    extra = 3
+    fields = ('name', 'description', 'status', 'priority', 'due_date', 'assignee')
+
 
 @admin.register(Task)
 class TaskAdmin(ImportExportModelAdmin, admin.ModelAdmin):
-    list_display = ('name', 'description', 'status', 'priority', 'due_date', 'assignee')
+    list_display = ('name', 'description', 'status', 'priority', 'due_date', 'assignee', 'created_at', 'updated_at')
     search_fields = ('name', 'description')
     list_filter = ('status', 'priority', HighPriorityFilter, 'due_date', 'assignee')
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'due_date'
+    inlines = [SubtaskInline]
+    raw_id_fields = ('assignee',)
     resource_class = TaskResource
 
     # Действия
@@ -97,6 +112,7 @@ class TaskAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 
     get_tasks_not_belongs_to_user.short_description = "Задачи других пользователей"
 
+
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('username', 'email', 'is_staff', 'is_active')
@@ -105,8 +121,20 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(UserBIO)
 class UserBIOAdmin(admin.ModelAdmin):
-    list_display = ('role', 'age', 'user')
+    list_display = ('role', 'formatted_age', 'user')
     search_fields = ('user__username',)
+    list_display_links = ('user',)
+
+
+    @admin.display(ordering='age', description="Возраст в годах")
+    def formatted_age(self, obj):
+        return obj.age if obj.age>18 else "Проверить возраст"
+
+class UserProfileProjectInline(admin.TabularInline):
+    model = UserProfileProject
+    extra = 1
+    verbose_name = "Связь пользователя и проекта"
+    verbose_name_plural = "Связи пользователей и проектов"
 
 
 @admin.register(Project)
@@ -114,11 +142,13 @@ class ProjectAdmin(admin.ModelAdmin):
     list_display = ('name', 'status', 'created_at', 'updated_at')
     list_filter = ('status',)
     search_fields = ('name', 'description')
+    inlines = [TaskInline, UserProfileProjectInline]
+
 
 
 @admin.register(UserProfileProject)
 class UserProfileProjectAdmin(admin.ModelAdmin):
-    list_display = ('user_profile', 'project')
+    list_display = ('user_profile', 'project', 'role', 'added_on')
     search_fields = ('user_profile__username', 'project__name')
 
 
@@ -127,6 +157,8 @@ class SubtaskAdmin(admin.ModelAdmin):
     list_display = ('name', 'status', 'task')
     list_filter = ('status', 'task')
     search_fields = ('name',)
+
+
 
 
 @admin.register(Comment)
