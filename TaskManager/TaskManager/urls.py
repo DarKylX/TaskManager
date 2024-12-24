@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
 from drf_yasg import openapi
@@ -25,7 +26,7 @@ from rest_framework.authtoken import views
 schema_view = get_schema_view(
     openapi.Info(
         title="API Documentation",
-        default_version='v1',
+        default_version="v1",
         description="Description of your API",
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(email="your_email@example.com"),
@@ -36,9 +37,26 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-    path('api-token-auth/', views.obtain_auth_token),
-    path('api/', include('todolist.urls')),
+    path(
+        "admin/",
+        admin.site.urls),
+    path(
+        "swagger/",
+        schema_view.with_ui(
+            "swagger",
+            cache_timeout=0),
+        name="schema-swagger-ui",
+    ),
+    path(
+        "redoc/",
+        schema_view.with_ui(
+            "redoc",
+            cache_timeout=0),
+        name="schema-redoc"),
+    path(
+        "api-token-auth/",
+        views.obtain_auth_token),
+    path(
+        "api/",
+        include("todolist.urls")),
 ]

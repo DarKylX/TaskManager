@@ -4,20 +4,30 @@ from .models import Task, UserBIO
 from django.utils import timezone
 from datetime import timedelta
 
+
 class TaskFilter(filters.FilterSet):
 
-    status = django_filters.CharFilter(field_name='status', lookup_expr='exact', label="Статус")
+    status = django_filters.CharFilter(
+        field_name="status", lookup_expr="exact", label="Статус"
+    )
 
-    due_date = filters.DateFilter(field_name='due_date', lookup_expr='exact', label="Дедлайн")
+    due_date = filters.DateFilter(
+        field_name="due_date", lookup_expr="exact", label="Дедлайн"
+    )
 
-    due_date_range = filters.DateFromToRangeFilter(field_name='due_date', label="Диапазон дедлайнов")
+    due_date_range = filters.DateFromToRangeFilter(
+        field_name="due_date", label="Диапазон дедлайнов"
+    )
 
-    current_user = filters.BooleanFilter(method='filter_by_current_user', label="Поиск по авторизованному человеку")
-
+    current_user = filters.BooleanFilter(
+        method="filter_by_current_user",
+        label="Поиск по авторизованному человеку")
 
     class Meta:
         model = Task
-        fields = ['due_date',]
+        fields = [
+            "due_date",
+        ]
 
     def filter_by_current_user(self, queryset, name, value):
         if value:
@@ -29,5 +39,4 @@ class TaskFilter(filters.FilterSet):
 class UserBIOFilter(filters.FilterSet):
     class Meta:
         model = UserBIO
-        fields = ['age', 'role', 'company']
-
+        fields = ["age", "role", "company"]
