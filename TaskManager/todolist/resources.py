@@ -1,14 +1,19 @@
+"""Экспорт """
 from import_export import resources
 from .models import Task
 
 
 class TaskResource(resources.ModelResource):
+    """ Функции для преобразований при экспорте """
     class Meta:
+        """ Meta information"""
+        # pylint: disable=too-few-public-methods
         model = Task
         fields = ("name", "description", "status", "priority", "due_date")
 
-    def get_export_queryset(self, request=None):
-        """Возвращает набор данных для экспорта, включая только задачи с высоким приоритетом."""
+    def get_export_queryset(self, _request=None):
+        """Возвращает набор данных для экспорта, \
+        включая только задачи с высоким приоритетом."""
         return Task.objects.filter(priority="5")
 
     def dehydrate_due_date(self, task):

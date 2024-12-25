@@ -1,11 +1,10 @@
+""" Фильтры """
 import django_filters
 from django_filters import rest_framework as filters
 from .models import Task, UserBIO
-from django.utils import timezone
-from datetime import timedelta
-
 
 class TaskFilter(filters.FilterSet):
+    """Filter"""
 
     status = django_filters.CharFilter(
         field_name="status", lookup_expr="exact", label="Статус"
@@ -24,12 +23,15 @@ class TaskFilter(filters.FilterSet):
         label="Поиск по авторизованному человеку")
 
     class Meta:
+        # pylint: disable=too-few-public-methods
+        """ Meta """
         model = Task
         fields = [
             "due_date",
         ]
 
-    def filter_by_current_user(self, queryset, name, value):
+    def filter_by_current_user(self, queryset, _name, value):
+        """Фильтрация по текущему пользователю"""
         if value:
             user = self.request.user
             return queryset.filter(assignee=user)
@@ -37,6 +39,9 @@ class TaskFilter(filters.FilterSet):
 
 
 class UserBIOFilter(filters.FilterSet):
+    """Filter"""
     class Meta:
+        # pylint: disable=too-few-public-methods
+        """Meta """
         model = UserBIO
         fields = ["age", "role", "company"]

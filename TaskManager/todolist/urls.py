@@ -1,7 +1,6 @@
-from django.views.decorators.csrf import csrf_exempt
+""" Урлы """
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
-
 # Импортируем все необходимые viewsets
 from .views.view_sets import (
     TaskViewSet,

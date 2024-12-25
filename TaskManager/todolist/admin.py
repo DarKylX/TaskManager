@@ -2,6 +2,8 @@
 Модуль admin.py содержит описание кастомной админки для управления
 пользователями, задачами, проектами и другими моделями.
 """
+# pylint: disable=R0801
+
 
 from datetime import timedelta  # стандартные библиотеки
 from django.contrib import admin
@@ -72,6 +74,7 @@ class SubtaskInline(admin.TabularInline):
 class TaskInline(admin.TabularInline):
     """ Добавление полей для тасок
     """
+
     model = Task
     extra = 3
     fields = (
@@ -84,7 +87,7 @@ class TaskInline(admin.TabularInline):
 
 
 @admin.register(Task)
-class TaskAdmin(ImportExportModelAdmin):
+class TaskAdmin(ImportExportModelAdmin): # pylint: disable=too-many-ancestors
     """ Описание кастомной админки для модели Task """
     list_display = (
         "name",
