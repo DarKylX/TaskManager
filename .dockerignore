@@ -1,0 +1,36 @@
+# Python-файлы
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.pdb
+*.egg-info/
+
+# Файлы окружения
+.env
+*.env
+
+# Локальная база данных
+db.sqlite3
+
+# Docker-файлы
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.log
+
+# Git-файлы
+.git/
+*.gitignore
+
+# Виртуальное окружение
+.venv/
+venv/

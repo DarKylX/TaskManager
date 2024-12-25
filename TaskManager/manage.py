@@ -9,7 +9,7 @@ from django.core.management import (
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "task_manager.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "TaskManager.settings")
     try:
         execute_from_command_line(sys.argv)
     except ImportError as exc:
