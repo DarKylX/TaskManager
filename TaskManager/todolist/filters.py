@@ -1,7 +1,9 @@
 """ Фильтры """
+
 import django_filters
 from django_filters import rest_framework as filters
 from .models import Task, UserBIO
+
 
 class TaskFilter(filters.FilterSet):
     """Filter"""
@@ -19,12 +21,12 @@ class TaskFilter(filters.FilterSet):
     )
 
     current_user = filters.BooleanFilter(
-        method="filter_by_current_user",
-        label="Поиск по авторизованному человеку")
+        method="filter_by_current_user", label="Поиск по авторизованному человеку"
+    )
 
     class Meta:
         # pylint: disable=too-few-public-methods
-        """ Meta """
+        """Meta"""
         model = Task
         fields = [
             "due_date",
@@ -40,8 +42,9 @@ class TaskFilter(filters.FilterSet):
 
 class UserBIOFilter(filters.FilterSet):
     """Filter"""
+
     class Meta:
         # pylint: disable=too-few-public-methods
-        """Meta """
+        """Meta"""
         model = UserBIO
         fields = ["age", "role", "company"]

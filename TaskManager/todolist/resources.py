@@ -1,12 +1,15 @@
 """Экспорт """
+
 from import_export import resources
 from .models import Task
 
 
 class TaskResource(resources.ModelResource):
-    """ Функции для преобразований при экспорте """
+    """Функции для преобразований при экспорте"""
+
     class Meta:
-        """ Meta information"""
+        """Meta information"""
+
         # pylint: disable=too-few-public-methods
         model = Task
         fields = ("name", "description", "status", "priority", "due_date")

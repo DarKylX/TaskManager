@@ -1,4 +1,5 @@
 """ Models """
+
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password
 from django.db import models
@@ -10,25 +11,26 @@ from simple_history.models import HistoricalRecords
 
 
 class UserProfile(AbstractUser):
-    """ Модель UserProfile """
+    """Модель UserProfile"""
+
     email = models.EmailField(max_length=320, verbose_name="Электронная почта")
 
     def set_password(self, raw_password):
-        """ Функция установления пароля """
+        """Функция установления пароля"""
         self.password = make_password(raw_password)
 
     def check_password(self, raw_password):
-        """ Функция проверки пароля """
+        """Функция проверки пароля"""
 
         return check_password(raw_password, self.password)
 
     def __str__(self):
-        """ Функция возвращает имя пользователя """
+        """Функция возвращает имя пользователя"""
         return str(self.username)
 
     class Meta:
         # pylint: disable=too-few-public-methods
-        """ Meta """
+        """Meta"""
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
 
@@ -36,7 +38,8 @@ class UserProfile(AbstractUser):
 
 
 class UserBIO(models.Model):
-    """ Модель UserBIO """
+    """Модель UserBIO"""
+
     ROLE_CHOICES = [
         ("ADMIN", "Администратор"),
         ("USER", "Пользователь"),
@@ -50,19 +53,17 @@ class UserBIO(models.Model):
     )
     company = models.CharField("Компания", max_length=255)
     role = models.CharField(
-        max_length=20,
-        choices=ROLE_CHOICES,
-        default="USER",
-        verbose_name="Роль")
+        max_length=20, choices=ROLE_CHOICES, default="USER", verbose_name="Роль"
+    )
     age = models.IntegerField("Возраст")
 
     def __str__(self):
-        """ Возвращает корректное отображение названия в админке """
-        return f"О пользователе {self.user.username}" # pylint: disable=no-member
+        """Возвращает корректное отображение названия в админке"""
+        return f"О пользователе {self.user.username}"  # pylint: disable=no-member
 
     class Meta:
         # pylint: disable=too-few-public-methods
-        """ Meta """
+        """Meta"""
         verbose_name = "О пользователе"
         verbose_name_plural = "О пользователях"
 
@@ -70,7 +71,8 @@ class UserBIO(models.Model):
 
 
 class Project(models.Model):
-    """ Модель Project """
+    """Модель Project"""
+
     STATUS_CHOICES = [
         ("NEW", "Новый"),
         ("IN_PROGRESS", "Выполняется"),
@@ -89,42 +91,37 @@ class Project(models.Model):
     )
 
     def __str__(self):
-        """ Функция возвращает имя проекта """
+        """Функция возвращает имя проекта"""
         return str(self.name)
 
     class Meta:
         # pylint: disable=too-few-public-methods
-        """ Meta """
+        """Meta"""
         verbose_name = "Проект"
         verbose_name_plural = "Проекты"
 
     def get_absolute_url(self):
-        """ Функция возвращает абсолютный URL проекта """
+        """Функция возвращает абсолютный URL проекта"""
         return reverse("project_detail", args=[str(self.id)])
 
     history = HistoricalRecords()
 
 
 class UserProfileProject(models.Model):
-    """ Модель UserProfileProject """
+    """Модель UserProfileProject"""
+
     user_profile = models.ForeignKey(
         UserProfile, on_delete=models.CASCADE, verbose_name="Пользователь"
     )
     project = models.ForeignKey(
         Project, on_delete=models.CASCADE, verbose_name="Проект"
     )
-    role = models.CharField(
-        max_length=50,
-        blank=True,
-        null=True,
-        verbose_name="Роль")
-    added_on = models.DateField(
-        auto_now_add=True,
-        verbose_name="Дата добавления")
+    role = models.CharField(max_length=50, blank=True, null=True, verbose_name="Роль")
+    added_on = models.DateField(auto_now_add=True, verbose_name="Дата добавления")
 
     class Meta:
         # pylint: disable=too-few-public-methods
-        """ Meta """
+        """Meta"""
         unique_together = ("user_profile", "project")
         verbose_name = "Проект пользователя"
         verbose_name_plural = "Проекты пользователей"
@@ -133,10 +130,11 @@ class UserProfileProject(models.Model):
 
 
 class TaskManager(models.Manager):
-    """ Класс TaskManager """
+    """Класс TaskManager"""
+
     # pylint: disable=too-few-public-methods
     def get_overdue(self):
-        """ Возвращает список задач, которые должны быть выполнены срочно """
+        """Возвращает список задач, которые должны быть выполнены срочно"""
         return self.filter(
             due_date__lt=timezone.now().date(),
             status__in=["NEW", "BACKLOG", "IN_PROGRESS"],
@@ -144,7 +142,8 @@ class TaskManager(models.Manager):
 
 
 class Task(models.Model):
-    """ Модель Task """
+    """Модель Task"""
+
     STATUS_CHOICES = [
         ("NEW", "Новая"),
         ("BACKLOG", "Бэклог"),
@@ -169,11 +168,8 @@ class Task(models.Model):
         "Приоритет", max_length=1, choices=PRIORITY_CHOICES, default="1"
     )
     due_date = models.DateField("Крайний срок")
-    created_at = models.DateField(
-        auto_now_add=True,
-        verbose_name= "Дата создания")
-    updated_at = models.DateField(
-        auto_now=True, verbose_name="Дата обновления")
+    created_at = models.DateField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateField(auto_now=True, verbose_name="Дата обновления")
     project = models.ForeignKey(
         Project, on_delete=models.CASCADE, verbose_name="Проект"
     )
@@ -191,26 +187,26 @@ class Task(models.Model):
     objects = TaskManager()
 
     def validate_subtasks_count(self):
-        """ Проверка количества подзадач перед сохранением """
+        """Проверка количества подзадач перед сохранением"""
         subtask_count = self.subtask_set.count()
         if subtask_count > 5:
-            raise ValidationError(
-                {"subtasks": "Максимальное количество подзадач - 5"})
+            raise ValidationError({"subtasks": "Максимальное количество подзадач - 5"})
 
     def __str__(self):
-        """ Функция возвращает имя задачи """
+        """Функция возвращает имя задачи"""
         return str(self.name)
 
     class Meta:
         # pylint: disable=too-few-public-methods
-        """" Meta """
+        """ " Meta"""
         verbose_name = "Задача"
         verbose_name_plural = "Задачи"
         ordering = ("due_date",)
 
 
 class Subtask(models.Model):
-    """ Модель Subtask """
+    """Модель Subtask"""
+
     STATUS_CHOICES = [
         ("NEW", "Новая"),
         ("IN_PROGRESS", "Выполняется"),
@@ -222,13 +218,10 @@ class Subtask(models.Model):
     status = models.CharField(
         "Статус", max_length=20, choices=STATUS_CHOICES, default="NEW"
     )
-    task = models.ForeignKey(
-        Task,
-        on_delete=models.CASCADE,
-        verbose_name="Задача")
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, verbose_name="Задача")
 
     def clean(self):
-        """ Проверка количества подзадач перед сохранением """
+        """Проверка количества подзадач перед сохранением"""
         task = self.task
         subtask_count = task.subtask_set.count()
 
@@ -242,17 +235,17 @@ class Subtask(models.Model):
             )
 
     def save(self, *args, **kwargs):
-        """ Переопределение метода save для проверки количества подзадач """
+        """Переопределение метода save для проверки количества подзадач"""
         self.full_clean()
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        """ Функция возвращает имя подзадачи """
+        """Функция возвращает имя подзадачи"""
         return str(self.name)
 
     class Meta:
         # pylint: disable=too-few-public-methods
-        """ Meta """
+        """Meta"""
         verbose_name = "Подзадача"
         verbose_name_plural = "Подзадачи"
 
@@ -260,25 +253,23 @@ class Subtask(models.Model):
 
 
 class Comment(models.Model):
-    """ Модель Comment """
+    """Модель Comment"""
+
     text = models.TextField("Текст комментария")
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
     updated_at = models.DateTimeField("Дата обновления", auto_now=True)
     author = models.ForeignKey(
         UserProfile, on_delete=models.CASCADE, verbose_name="Автор"
     )
-    task = models.ForeignKey(
-        Task,
-        on_delete=models.CASCADE,
-        verbose_name="Задача")
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, verbose_name="Задача")
 
     def __str__(self):
-        """ Функция возвращает текст комментария """
+        """Функция возвращает текст комментария"""
         return f"Прокомментировано {self.author.username} на {self.task.name}"
 
     class Meta:
         # pylint: disable=too-few-public-methods
-        """ Meta """
+        """Meta"""
         verbose_name = "Комментарий"
         verbose_name_plural = "Комментарии"
 

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ task.name }}{% endblock %}
+
+{% block content %}
+    <h1>{{ task.name }}</h1>
+    <p><strong>Описание:</strong> {{ task.description }}</p>
+    <p><strong>Статус:</strong> {{ task.get_status_display }}</p>
+    <p><strong>Приоритет:</strong> {{ task.get_priority_display }}</p>
+    <p><strong>Срок выполнения:</strong> {{ task.due_date }}</p>
+    <a href="{% url 'task_update' task.id %}">Редактировать</a>
+    <a href="{% url 'task_delete' task.id %}">Удалить</a>
+    <h2>Подзадачи</h2>
+    <a href="{% url 'subtask_create' task.id %}">Добавить подзадачу</a>
+    <ul>
+        {% for subtask in task.subtasks.all %}
+            <li>
+                {{ subtask.name }} - {{ subtask.get_status_display }}
+                <a href="{% url 'subtask_update' task.id subtask.id %}">Редактировать</a>
+                <a href="{% url 'subtask_delete' task.id subtask.id %}">Удалить</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

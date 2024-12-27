@@ -1,6 +1,8 @@
 """ Урлы """
+
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
+
 # Импортируем все необходимые viewsets
 from .views.view_sets import (
     TaskViewSet,
@@ -41,5 +43,25 @@ urlpatterns = [
         "project/<int:pk>/",
         ProjectViewSet.as_view({"get": "retrieve"}),
         name="project_detail",
+    ),
+    path(
+        "task/html/",
+        TaskViewSet.as_view({"get": "task_list_html"}),
+        name="task-list-html",
+    ),
+    path(
+        "task/<int:pk>/html/",
+        TaskViewSet.as_view({"get": "task_detail_html"}),
+        name="task-detail-html",
+    ),
+    path(
+        "task/create/html/",
+        TaskViewSet.as_view({"get": "task_create_html"}),
+        name="task-create-html",
+    ),
+    path(
+        "task/<int:pk>/update/html/",
+        TaskViewSet.as_view({"get": "task_update_html"}),
+        name="task-update-html",
     ),
 ]

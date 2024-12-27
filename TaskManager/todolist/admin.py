@@ -2,6 +2,7 @@
 Модуль admin.py содержит описание кастомной админки для управления
 пользователями, задачами, проектами и другими моделями.
 """
+
 # pylint: disable=R0801
 
 
@@ -26,16 +27,17 @@ from .resources import TaskResource
 
 class HighPriorityFilter(admin.SimpleListFilter):
     """
-       Кастомный фильтр для задач:
-       - Высокоприоритетные незавершенные
-       - Дедлайн завтра
-       - Не мои задачи
-       """
+    Кастомный фильтр для задач:
+    - Высокоприоритетные незавершенные
+    - Дедлайн завтра
+    - Не мои задачи
+    """
+
     title = "Расширенный фильтр задач"
     parameter_name = "task_filter"
 
     def lookups(self, request, model_admin):
-        """ Returns a list of tuples representing filter options """
+        """Returns a list of tuples representing filter options"""
         return (
             ("high_priority_incomplete", "Высокоприоритетные незавершенные"),
             ("due_tomorrow", "Дедлайн завтра"),
@@ -43,7 +45,7 @@ class HighPriorityFilter(admin.SimpleListFilter):
         )
 
     def queryset(self, request, queryset):
-        """ queryset of tasks in a given queryset """
+        """queryset of tasks in a given queryset"""
         if self.value() == "high_priority_incomplete":
             return queryset.filter(
                 priority="5", status__in=["NEW", "BACKLOG", "IN_PROGRESS"]
@@ -52,10 +54,8 @@ class HighPriorityFilter(admin.SimpleListFilter):
         if self.value() == "due_tomorrow":
             tomorrow = timezone.now() + timedelta(days=1)
             return queryset.filter(
-                due_date__gte=tomorrow,
-                due_date__lt=tomorrow +
-                timedelta(
-                    days=1))
+                due_date__gte=tomorrow, due_date__lt=tomorrow + timedelta(days=1)
+            )
 
         if self.value() == "not_my_tasks":
             return queryset.exclude(assignee=request.user)
@@ -64,31 +64,25 @@ class HighPriorityFilter(admin.SimpleListFilter):
 
 
 class SubtaskInline(admin.TabularInline):
-    """ Добавление полей для подзадач
-    """
+    """Добавление полей для подзадач"""
+
     model = Subtask
     extra = 4
     fields = ("name", "description", "status")
 
 
 class TaskInline(admin.TabularInline):
-    """ Добавление полей для тасок
-    """
+    """Добавление полей для тасок"""
 
     model = Task
     extra = 3
-    fields = (
-        "name",
-        "description",
-        "status",
-        "priority",
-        "due_date",
-        "assignee")
+    fields = ("name", "description", "status", "priority", "due_date", "assignee")
 
 
 @admin.register(Task)
-class TaskAdmin(ImportExportModelAdmin): # pylint: disable=too-many-ancestors
-    """ Описание кастомной админки для модели Task """
+class TaskAdmin(ImportExportModelAdmin):  # pylint: disable=too-many-ancestors
+    """Описание кастомной админки для модели Task"""
+
     list_display = (
         "name",
         "description",
@@ -100,12 +94,7 @@ class TaskAdmin(ImportExportModelAdmin): # pylint: disable=too-many-ancestors
         "updated_at",
     )
     search_fields = ("name", "description")
-    list_filter = (
-        "status",
-        "priority",
-        HighPriorityFilter,
-        "due_date",
-        "assignee")
+    list_filter = ("status", "priority", HighPriorityFilter, "due_date", "assignee")
     readonly_fields = ("created_at", "updated_at")
     date_hierarchy = "due_date"
     inlines = [SubtaskInline]
@@ -133,8 +122,7 @@ class TaskAdmin(ImportExportModelAdmin): # pylint: disable=too-many-ancestors
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
 
-    export_high_priority_tasks.short_description = \
-        "Экспорт задач с высоким приоритетом"
+    export_high_priority_tasks.short_description = "Экспорт задач с высоким приоритетом"
 
     def get_high_priority_incomplete_tasks(self, request, queryset):
         """Получение задач, которые не выполнены и имеют высокий приоритет."""
@@ -143,8 +131,9 @@ class TaskAdmin(ImportExportModelAdmin): # pylint: disable=too-many-ancestors
         )
         self.message_user(
             request,
-            f"Найдено высокоприоритетных незавершенных задач: {
-                tasks.count()}")
+            f"Найдено высокоприоритетных незавершенных задач: \
+            {tasks.count()}",
+        )
 
     get_high_priority_incomplete_tasks.short_description = (
         "Высокоприоритетные незавершенные задачи"
@@ -161,8 +150,8 @@ class TaskAdmin(ImportExportModelAdmin): # pylint: disable=too-many-ancestors
         )
         self.message_user(
             request,
-            f"Найдено задач высокого приоритета или с дедлайном завтра: {
-                tasks.count()}",
+            f"Найдено задач высокого приоритета или с дедлайном завтра: \
+                {tasks.count()}",
         )
 
     get_high_priority_or_due_tomorrow.short_description = (
@@ -176,8 +165,8 @@ class TaskAdmin(ImportExportModelAdmin): # pylint: disable=too-many-ancestors
         )
         self.message_user(
             request,
-            f"Найдено задач, не принадлежащих текущему пользователю: {
-                tasks.count()}",
+            f"Найдено задач, не принадлежащих текущему пользователю: \
+            {tasks.count()}",
         )
 
     get_tasks_not_belongs_to_user.short_description = "Задачи других пользователей"
@@ -185,26 +174,29 @@ class TaskAdmin(ImportExportModelAdmin): # pylint: disable=too-many-ancestors
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    """ Отображение пользователей"""
+    """Отображение пользователей"""
+
     list_display = ("username", "email", "is_staff", "is_active")
     search_fields = ("username", "email")
 
 
 @admin.register(UserBIO)
 class UserBIOAdmin(admin.ModelAdmin):
-    """ Отображение информации о пользователе """
+    """Отображение информации о пользователе"""
+
     list_display = ("role", "formatted_age", "user")
     search_fields = ("user__username",)
     list_display_links = ("user",)
 
     @admin.display(ordering="age", description="Возраст в годах")
     def formatted_age(self, obj):
-        """ Возвращает форматированный возраст """
+        """Возвращает форматированный возраст"""
         return obj.age if obj.age > 18 else "Проверить возраст"
 
 
 class UserProfileProjectInline(admin.TabularInline):
-    """ Добавление полей для связи с проектами """
+    """Добавление полей для связи с проектами"""
+
     model = UserProfileProject
     extra = 1
     verbose_name = "Связь пользователя и проекта"
@@ -213,7 +205,8 @@ class UserProfileProjectInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    """ Описание админки для модели Project """
+    """Описание админки для модели Project"""
+
     list_display = ("name", "status", "created_at", "updated_at")
     list_filter = ("status",)
     search_fields = ("name", "description")
@@ -222,14 +215,16 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(UserProfileProject)
 class UserProfileProjectAdmin(admin.ModelAdmin):
-    """ Описание админки для модели UserProfileProject """
+    """Описание админки для модели UserProfileProject"""
+
     list_display = ("user_profile", "project", "role", "added_on")
     search_fields = ("user_profile__username", "project__name")
 
 
 @admin.register(Subtask)
 class SubtaskAdmin(admin.ModelAdmin):
-    """ Описание админки для модели Subtask """
+    """Описание админки для модели Subtask"""
+
     list_display = ("name", "status", "task")
     list_filter = ("status", "task")
     search_fields = ("name",)
@@ -237,6 +232,7 @@ class SubtaskAdmin(admin.ModelAdmin):
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    """ Описание админки для модели Comment """
+    """Описание админки для модели Comment"""
+
     list_display = ("author", "task", "created_at")
     search_fields = ("text", "task__name", "author__username")
