@@ -192,6 +192,15 @@ class TaskSerializer(serializers.ModelSerializer):
 
         return updated_task
 
+    def validate_subtask_count(self, task):
+        # Получаем количество подзадач для этой задачи
+        subtask_count = Subtask.objects.filter(task=task).count()
+        # Проверяем, не превышает ли количество подзадач 5
+        if subtask_count > 5:
+            raise serializers.ValidationError({
+                "subtasks": "Максимальное количество подзадач - 5."
+            })
+
 
 class SubtaskCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания подзадачи с проверкой лимита"""
