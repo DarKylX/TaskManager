@@ -4,6 +4,7 @@
 from datetime import timedelta
 import django_filters
 from django.utils import timezone
+from django.core.cache import cache
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from django_filters.rest_framework import DjangoFilterBackend
@@ -15,6 +16,8 @@ from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from simple_history.utils import update_change_reason
+import logging
+
 
 from ..filters import TaskFilter, UserBIOFilter
 
@@ -39,12 +42,29 @@ from ..serializers.todolists import (
     HistoricalTaskSerializer,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     """Вьюсет профилей"""
 
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+
+    def get_queryset(self):
+        """
+        Получение списка профилей с использованием кеширования
+        """
+        cache_key = 'all_user_profiles'
+        queryset = cache.get(cache_key)
+        if queryset is None:
+            queryset = UserProfile.objects.all()
+            cache.set(cache_key, list(queryset), timeout=60 * 15)  # Кэшируем список на 15 минут
+        else:
+            # Преобразуем кэшированный список обратно в QuerySet
+            queryset = UserProfile.objects.filter(id__in=[profile.id for profile in queryset])
+
+        return queryset
 
     @swagger_auto_schema(
         operation_summary="Получение всех профилей пользователей",
@@ -61,7 +81,11 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         """Создание нового профиля"""
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        # Инвалидируем кеш после создания
+        if response.status_code == status.HTTP_201_CREATED:
+            cache.delete('all_user_profiles')
+        return response
 
     @swagger_auto_schema(
         operation_summary="Обновление профиля пользователя",
@@ -70,7 +94,11 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     )
     def update(self, request, *args, **kwargs):
         """Обновление информации о пользователе"""
-        return super().update(request, *args, **kwargs)
+        response = super().update(request, *args, **kwargs)
+        # Инвалидируем кеш после обновления
+        if response.status_code == status.HTTP_200_OK:
+            cache.delete('all_user_profiles')
+        return response
 
     @swagger_auto_schema(
         operation_summary="Частичное обновление профиля пользователя",
@@ -79,14 +107,40 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     )
     def partial_update(self, request, *args, **kwargs):
         """Частичное обновление информации о пользователе"""
-        return super().partial_update(request, *args, **kwargs)
+        response = super().partial_update(request, *args, **kwargs)
+        # Инвалидируем кеш после частичного обновления
+        cache.delete('all_user_profiles')
+        cache.delete(f'user_profile_{kwargs.get("pk")}')
+        return response
 
     @swagger_auto_schema(
         operation_summary="Удаление профиля пользователя", responses={204: "No Content"}
     )
     def destroy(self, request, *args, **kwargs):
         """Удаление функции"""
-        return super().destroy(request, *args, **kwargs)
+        # Инвалидируем кеш перед удалением
+        response = super().destroy(request, *args, **kwargs)
+        if response.status_code == status.HTTP_204_NO_CONTENT:
+            cache.delete('all_user_profiles')
+        return response
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Получение конкретного профиля с использованием кеширования
+        """
+        pk = kwargs.get('pk')
+        cache_key = f'user_profile_{pk}'
+
+        # Пытаемся получить данные из кеша
+        instance = cache.get(cache_key)
+
+        if instance is None:
+            instance = self.get_object()
+            # Кешируем на 15 минут
+            cache.set(cache_key, instance, timeout=60 * 15)
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class UserBIOViewSet(viewsets.ModelViewSet):
@@ -259,9 +313,30 @@ class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
     filter_backends = (
         django_filters.rest_framework.DjangoFilterBackend,
-    )  # Указываем, что фильтры будут использоваться
-    filterset_class = TaskFilter  # Подключаем фильтр
+    )
+    filterset_class = TaskFilter
     pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        """
+        Получение списка всех задач с использованием кэширования.
+        """
+        cache_key = "all_tasks"
+        task_ids = cache.get(cache_key)
+
+        if task_ids:
+            # Загружаем задачи из базы по ID из кэша
+            logger.debug(f"[КЭШ] Задачи найдены в кэше: {task_ids}")
+            queryset = Task.objects.filter(id__in=task_ids).order_by("id")
+        else:
+            # Загружаем все задачи из базы и кэшируем их ID
+            logger.debug("[КЭШ] Кэш пуст. Загружаем задачи из базы данных.")
+            queryset = Task.objects.all().order_by("id")
+            task_ids = list(queryset.values_list("id", flat=True))
+            cache.set(cache_key, task_ids, timeout=60 * 15)
+            logger.debug(f"[КЭШ] Задачи сохранены в кэше: {task_ids}")
+
+        return queryset
 
     @action(detail=False, methods=["get"])
     def task_list_html(self, request):
@@ -307,7 +382,19 @@ class TaskViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         """Создание задачи"""
-        return super().create(request, *args, **kwargs)
+        logger.debug("[DEBUG] Начало создания задачи.")
+        logger.debug(f"[DEBUG] Данные запроса: {request.data}")
+        response = super().create(request, *args, **kwargs)
+        if response.status_code == status.HTTP_201_CREATED:
+            logger.debug("[DEBUG] Задача успешно создана.")
+            logger.debug(f"[DEBUG] Данные созданной задачи: {response.data}")
+            # Инвалидируем кэш после создания задачи
+            cache.delete(f"user_tasks_{request.user.id}")
+            logger.debug("[DEBUG] Кэш задач сброшен.")
+        else:
+            logger.debug(f"[DEBUG] Ошибка при создании задачи. Статус: {response.status_code}")
+            logger.debug(f"[DEBUG] Ответ сервера: {response.data}")
+        return response
 
     @swagger_auto_schema(
         operation_summary="Обновление задачи",
@@ -343,7 +430,12 @@ class TaskViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         """Удаление задачи"""
-        return super().destroy(request, *args, **kwargs)
+        task = self.get_object()
+        response = super().destroy(request, *args, **kwargs)
+        # Инвалидируем кеш после удаления
+        if task.assignee:
+            cache.delete(f'user_tasks_{task.assignee.id}')
+        return response
 
     @swagger_auto_schema(
         operation_summary="Получение истории задачи",
