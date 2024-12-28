@@ -6,6 +6,7 @@ from .models import (
 )  # локальные модули
 from django.core.mail import send_mail
 from celery import shared_task
+from django.conf import settings
 
 @shared_task
 def delete_expired_tasks():
@@ -14,16 +15,22 @@ def delete_expired_tasks():
 
 @shared_task
 def send_task_reminders():
-    tomorrow = timezone.now().date() + timedelta(days=1)
-    tasks = Task.objects.filter(due_date=tomorrow)
-    for task in tasks:
-        if task.assignee and task.assignee.email:
-            send_mail(
-                'Напоминание о задаче',
-                f'Напоминаем о задаче "{task.name}", крайний срок завтра.',
-                'admin@example.com',
-                [task.assignee.email],
-            )
+    # Get tasks that need reminders
+    tasks_due_soon = Task.objects.filter(
+        due_date__lte=timezone.now() + timezone.timedelta(days=1),
+        status='PENDING'
+    )
+
+    for task in tasks_due_soon:
+        send_mail(
+            subject=f'Reminder: Task "{task.title}" is due soon',
+            message=f'Your task "{task.title}" is due {task.due_date}',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[task.user.email],
+            fail_silently=False,
+        )
+
+    return len(tasks_due_soon)  # Return number of reminders sent
 
 @shared_task
 def archive_completed_tasks():

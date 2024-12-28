@@ -1,12 +1,49 @@
-version: '3.8'
-
 services:
   web:
     build: .
-    command: gunicorn --chdir TaskManager --bind 0.0.0.0:8000 TaskManager.wsgi:application
-    volumes:
-      - .:/code
+    container_name: django_taskmanager
+    command: python manage.py runserver 0.0.0.0:8000
     ports:
       - "8000:8000"
+    volumes:
+      - .:/app
     environment:
-      - DJANGO_SETTINGS_MODULE=TaskManager.settings
+      - DEBUG=True
+    working_dir: /app/TaskManager
+    depends_on:
+      - redis
+      - mailhog
+      - celery-worker
+      - celery-beat
+
+  redis:
+    image: redis:alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    ports:
+      - "8025:8025"
+
+  celery-worker:
+    build: .
+    command: celery -A TaskManager worker -l info
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=True
+    depends_on:
+      - redis
+
+  celery-beat:
+    build: .
+    command: celery -A TaskManager beat -l info
+    volumes:
+      - .:/app
+    environment:к
+      - DEBUG=True
+    depends_on:
+      - redis
