@@ -21,6 +21,8 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.authtoken import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 # pylint: disable=C0103
 schema_view = get_schema_view(
@@ -47,3 +49,6 @@ urlpatterns = [
     path("api-token-auth/", views.obtain_auth_token),
     path("api/", include("todolist.urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
