@@ -26,11 +26,11 @@ app.conf.beat_schedule = {
     },
     'send-task-reminders': {
         'task': 'todolist.tasks.send_task_reminders',
-        'schedule': crontab(hour='1', minute='45'),  # Каждый день в 1:15
+        'schedule': crontab(minute='*'),  # Каждый день в 1:15
     },
     'archive-completed-tasks': {
         'task': 'todolist.tasks.archive_completed_tasks',
-        'schedule': crontab(hour='1', minute='0'),  # Каждый день в 1:00
+        'schedule': crontab(minute='*'),  # Каждый день в 1:00
     },
     'delete-inactive-users': {
         'task': 'todolist.tasks.delete_inactive_users',
