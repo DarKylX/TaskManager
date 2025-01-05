@@ -1,15 +1,17 @@
 services:
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: django_taskmanager
-    command: python manage.py runserver 0.0.0.0:8000
+    command: gunicorn --chdir TaskManager --bind 0.0.0.0:8000 TaskManager.wsgi:application
     ports:
       - "8000:8000"
     volumes:
       - .:/app
     environment:
       - DEBUG=True
-    working_dir: /app/TaskManager
+      - DOCKERIZED=1  # Добавлено здесь
     depends_on:
       - redis
       - mailhog
@@ -26,24 +28,31 @@ services:
     image: mailhog/mailhog
     container_name: mailhog
     ports:
-      - "8025:8025"
+      - "8025:8025"  # Веб-интерфейс
+      - "1025:1025"  # SMTP-сервер
 
   celery-worker:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: celery -A TaskManager worker -l info
     volumes:
       - .:/app
     environment:
       - DEBUG=True
+      - DOCKERIZED=1  # Добавлено здесь
     depends_on:
       - redis
 
   celery-beat:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: celery -A TaskManager beat -l info
     volumes:
       - .:/app
-    environment:к
+    environment:
       - DEBUG=True
+      - DOCKERIZED=1  # Добавлено здесь
     depends_on:
       - redis

@@ -20,10 +20,10 @@ COPY requirements.txt /app/
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Копируем весь проект в контейнер
-COPY . .
+COPY . /app/
 
 # Собираем статические файлы
-RUN python TaskManager/manage.py collectstatic --noinput
+RUN python manage.py collectstatic --noinput
 
 # Устанавливаем команду запуска Gunicorn
 CMD ["gunicorn", "--chdir", "TaskManager", "--bind", "0.0.0.0:8000", "TaskManager.wsgi:application"]
