@@ -42,7 +42,7 @@ from ..serializers.todolists import (
     HistoricalTaskSerializer,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('todolist')
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -318,48 +318,19 @@ class TaskViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
-        """
-        Получение списка всех задач с использованием кэширования.
-        """
         cache_key = "all_tasks"
         task_ids = cache.get(cache_key)
 
         if task_ids:
-            # Загружаем задачи из базы по ID из кэша
-            logger.debug(f"[КЭШ] Задачи найдены в кэше: {task_ids}")
+            logger.debug(f"[CACHE HIT] Получены задачи из кеша: {task_ids}")
             queryset = Task.objects.filter(id__in=task_ids).order_by("id")
         else:
-            # Загружаем все задачи из базы и кэшируем их ID
-            logger.debug("[КЭШ] Кэш пуст. Загружаем задачи из базы данных.")
+            logger.debug("[CACHE MISS] Кеш пуст. Загружаем из базы данных.")
             queryset = Task.objects.all().order_by("id")
             task_ids = list(queryset.values_list("id", flat=True))
             cache.set(cache_key, task_ids, timeout=60 * 15)
-            logger.debug(f"[КЭШ] Задачи сохранены в кэше: {task_ids}")
-
+            logger.debug(f"[CACHE SET] Задачи сохранены в кеш: {task_ids}")
         return queryset
-
-    @action(detail=False, methods=["get"])
-    def task_list_html(self, request):
-        """Страница списка всех задач"""
-        tasks = self.get_queryset()
-        return render(request, "task_list.html", {"tasks": tasks})
-
-    @action(detail=True, methods=["get"])
-    def task_detail_html(self, request, _pk=None):
-        """Страница детального просмотра задачи"""
-        task = self.get_object()
-        return render(request, "task_detail.html", {"task": task})
-
-    @action(detail=False, methods=["get"])
-    def task_create_html(self, request):
-        """Страница создания новой задачи"""
-        return render(request, "task_create.html")
-
-    @action(detail=True, methods=["get"])
-    def task_update_html(self, request, _pk=None):
-        """ Страница изменения задачи"""
-        task = self.get_object()
-        return render(request, "task_update.html", {"task": task})
 
     @action(detail=True, methods=["get"])
     def get_task_details(self, _request, pk=None):
@@ -389,7 +360,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             logger.debug("[DEBUG] Задача успешно создана.")
             logger.debug(f"[DEBUG] Данные созданной задачи: {response.data}")
             # Инвалидируем кэш после создания задачи
-            cache.delete(f"user_tasks_{request.user.id}")
+            cache.delete("all_tasks")
             logger.debug("[DEBUG] Кэш задач сброшен.")
         else:
             logger.debug(f"[DEBUG] Ошибка при создании задачи. Статус: {response.status_code}")
@@ -413,8 +384,16 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         # Записываем причину изменения
         reason = "; ".join(changes) if changes else "Изменение данных"
-        update_change_reason(instance, reason)
-        return super().update(request, *args, **kwargs)
+
+        # Сохраняем изменения
+        response = super().update(request, *args, **kwargs)
+
+        # Обновляем причину изменения после сохранения
+        if response.status_code == 200:
+            updated_instance = self.get_object()
+            update_change_reason(updated_instance, reason)
+
+        return response
 
     @swagger_auto_schema(
         operation_summary="Частичное обновление задачи",
@@ -434,7 +413,8 @@ class TaskViewSet(viewsets.ModelViewSet):
         response = super().destroy(request, *args, **kwargs)
         # Инвалидируем кеш после удаления
         if task.assignee:
-            cache.delete(f'user_tasks_{task.assignee.id}')
+            cache.delete("all_tasks")
+            logger.debug("[DEBUG] Кэш задач сброшен.")
         return response
 
     @swagger_auto_schema(
