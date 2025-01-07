@@ -1,49 +1,42 @@
 """ Вьюсеты """
 
 # pylint: disable=too-many-ancestors
+# pylint: disable=logging-fstring-interpolation
+import logging
 from datetime import timedelta
+
 import django_filters
-from django.utils import timezone
 from django.core.cache import cache
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from rest_framework import viewsets, status
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from simple_history.utils import update_change_reason
-import logging
-
 
 from ..filters import TaskFilter, UserBIOFilter
+from ..models import (Comment, Project, Subtask, Task, UserBIO, UserProfile,
+                      UserProfileProject)
+from ..serializers.todolists import (CommentSerializer,
+                                     HistoricalTaskSerializer,
+                                     ProjectSerializer,
+                                     SubtaskCreateSerializer,
+                                     SubtaskSerializer, TaskSerializer,
+                                     UserBiosSerializer,
+                                     UserProfileProjectSerializer,
+                                     UserProfileSerializer)
 
-from ..models import (
-    UserProfile,
-    UserBIO,
-    Project,
-    UserProfileProject,
-    Task,
-    Subtask,
-    Comment,
-)
-from ..serializers.todolists import (
-    UserProfileSerializer,
-    UserBiosSerializer,
-    ProjectSerializer,
-    UserProfileProjectSerializer,
-    TaskSerializer,
-    SubtaskSerializer,
-    CommentSerializer,
-    SubtaskCreateSerializer,
-    HistoricalTaskSerializer,
-)
+logger = logging.getLogger("todolist")
 
-logger = logging.getLogger('todolist')
 
+def index(request):
+    return render(request, 'index.html')
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     """Вьюсет профилей"""
@@ -55,14 +48,18 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         """
         Получение списка профилей с использованием кеширования
         """
-        cache_key = 'all_user_profiles'
+        cache_key = "all_user_profiles"
         queryset = cache.get(cache_key)
         if queryset is None:
             queryset = UserProfile.objects.all()
-            cache.set(cache_key, list(queryset), timeout=60 * 15)  # Кэшируем список на 15 минут
+            cache.set(
+                cache_key, list(queryset), timeout=60 * 15
+            )  # Кэшируем список на 15 минут
         else:
             # Преобразуем кэшированный список обратно в QuerySet
-            queryset = UserProfile.objects.filter(id__in=[profile.id for profile in queryset])
+            queryset = UserProfile.objects.filter(
+                id__in=[profile.id for profile in queryset]
+            )
 
         return queryset
 
@@ -84,7 +81,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         response = super().create(request, *args, **kwargs)
         # Инвалидируем кеш после создания
         if response.status_code == status.HTTP_201_CREATED:
-            cache.delete('all_user_profiles')
+            cache.delete("all_user_profiles")
         return response
 
     @swagger_auto_schema(
@@ -97,7 +94,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         response = super().update(request, *args, **kwargs)
         # Инвалидируем кеш после обновления
         if response.status_code == status.HTTP_200_OK:
-            cache.delete('all_user_profiles')
+            cache.delete("all_user_profiles")
         return response
 
     @swagger_auto_schema(
@@ -109,7 +106,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         """Частичное обновление информации о пользователе"""
         response = super().partial_update(request, *args, **kwargs)
         # Инвалидируем кеш после частичного обновления
-        cache.delete('all_user_profiles')
+        cache.delete("all_user_profiles")
         cache.delete(f'user_profile_{kwargs.get("pk")}')
         return response
 
@@ -121,15 +118,15 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         # Инвалидируем кеш перед удалением
         response = super().destroy(request, *args, **kwargs)
         if response.status_code == status.HTTP_204_NO_CONTENT:
-            cache.delete('all_user_profiles')
+            cache.delete("all_user_profiles")
         return response
 
     def retrieve(self, request, *args, **kwargs):
         """
-        Получение конкретного профиля с использованием кеширования
+            Получение конкретного профиля с использованием кеширования
         """
-        pk = kwargs.get('pk')
-        cache_key = f'user_profile_{pk}'
+        pk = kwargs.get("pk")
+        cache_key = f"user_profile_{pk}"
 
         # Пытаемся получить данные из кеша
         instance = cache.get(cache_key)
@@ -306,14 +303,23 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 100
 
 
+def task_summary(request):
+    """
+    Агрегирует данные о задачах и возвращает их в шаблон.
+    """
+    task_data = {
+        "total_tasks": Task.objects.total_tasks(),
+        "completed_tasks": Task.objects.filter(status="DONE").count(),
+        "in_progress_tasks": Task.objects.filter(status="IN_PROGRESS").count(),
+    }
+    return render(request, "task_summary.html", {"task_data": task_data})
+
 class TaskViewSet(viewsets.ModelViewSet):
     """Вьюсет задач"""
 
     queryset = Task.objects.all().order_by("id")
     serializer_class = TaskSerializer
-    filter_backends = (
-        django_filters.rest_framework.DjangoFilterBackend,
-    )
+    filter_backends = (django_filters.rest_framework.DjangoFilterBackend,)
     filterset_class = TaskFilter
     pagination_class = StandardResultsSetPagination
 
@@ -329,6 +335,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             queryset = Task.objects.all().order_by("id")
             task_ids = list(queryset.values_list("id", flat=True))
             cache.set(cache_key, task_ids, timeout=60 * 15)
+            logger.debug(f"[CACHE SET] Ключ '{cache_key}' установлен со значением: {task_ids}")
             logger.debug(f"[CACHE SET] Задачи сохранены в кеш: {task_ids}")
         return queryset
 
@@ -363,7 +370,9 @@ class TaskViewSet(viewsets.ModelViewSet):
             cache.delete("all_tasks")
             logger.debug("[DEBUG] Кэш задач сброшен.")
         else:
-            logger.debug(f"[DEBUG] Ошибка при создании задачи. Статус: {response.status_code}")
+            logger.debug(
+                f"[DEBUG] Ошибка при создании задачи. Статус: {response.status_code}"
+            )
             logger.debug(f"[DEBUG] Ответ сервера: {response.data}")
         return response
 
@@ -620,3 +629,4 @@ class CommentViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """Удаление комментария"""
         return super().destroy(request, *args, **kwargs)
+

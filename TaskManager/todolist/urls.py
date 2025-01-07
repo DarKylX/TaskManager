@@ -1,18 +1,12 @@
 """ Урлы """
 
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from django.urls import path, include
 
 # Импортируем все необходимые viewsets
-from .views.view_sets import (
-    TaskViewSet,
-    ProjectViewSet,
-    SubtaskViewSet,
-    CommentViewSet,
-    UserProfileViewSet,
-    UserBIOViewSet,
-    UserProfileProjectViewSet,
-)
+from .views.view_sets import (CommentViewSet, ProjectViewSet, SubtaskViewSet,
+                              TaskViewSet, UserBIOViewSet,
+                              UserProfileProjectViewSet, UserProfileViewSet, index, task_summary)
 
 router = DefaultRouter()
 
@@ -28,6 +22,8 @@ router.register(r"userprofileproject", UserProfileProjectViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("html/", index, name="index"),
+    path('task-summary/', task_summary, name='task_summary'),
     path("task/status/<str:status>/", TaskViewSet.as_view({"get": "list"})),
     path(
         "task/<int:pk>/history/",
