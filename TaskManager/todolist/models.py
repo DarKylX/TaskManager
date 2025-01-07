@@ -1,14 +1,22 @@
 """ Models """
 
-from django.utils import timezone
-from django.contrib.auth.hashers import make_password
-from django.db import models
-from django.core.exceptions import ValidationError
-from django.urls import reverse
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.hashers import check_password
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.urls import reverse
+from django.utils import timezone
+from django.db.models import Count
 from simple_history.models import HistoricalRecords
 
+# class UserProfileManager(models.Manager):
+#     """Кастомный менеджер для UserProfile"""
+#
+#     def active_users(self):
+#         return self.filter(is_active=True)
+#
+#     def get_by_natural_key(self, email):
+#         return self.get(email=email)
 
 class UserProfile(AbstractUser):
     """Модель UserProfile"""
@@ -35,6 +43,7 @@ class UserProfile(AbstractUser):
         verbose_name_plural = "Пользователи"
 
     history = HistoricalRecords()
+    #objects = UserProfileManager()
 
 
 class UserBIO(models.Model):
@@ -130,7 +139,7 @@ class UserProfileProject(models.Model):
 
 
 class TaskManager(models.Manager):
-    """Класс TaskManager"""
+    """Модельный менеджер Класс TaskManager"""
 
     # pylint: disable=too-few-public-methods
     def get_overdue(self):
@@ -140,6 +149,9 @@ class TaskManager(models.Manager):
             status__in=["NEW", "BACKLOG", "IN_PROGRESS"],
         )
 
+    def total_tasks(self):
+        """Возвращает общее количество задач."""
+        return self.aggregate(total=Count('id'))['total']
 
 class Task(models.Model):
     """Модель Task"""
@@ -198,7 +210,7 @@ class Task(models.Model):
 
     class Meta:
         # pylint: disable=too-few-public-methods
-        """ " Meta"""
+        """ Meta """
         verbose_name = "Задача"
         verbose_name_plural = "Задачи"
         ordering = ("due_date",)
