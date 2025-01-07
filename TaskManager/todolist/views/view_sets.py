@@ -17,12 +17,17 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
 from simple_history.utils import update_change_reason
 
 from ..filters import TaskFilter, UserBIOFilter
 from ..models import (Comment, Project, Subtask, Task, UserBIO, UserProfile,
                       UserProfileProject)
+from ..serializers.auth_serializers import RegisterSerializer
 from ..serializers.todolists import (CommentSerializer,
                                      HistoricalTaskSerializer,
                                      ProjectSerializer,
@@ -630,3 +635,32 @@ class CommentViewSet(viewsets.ModelViewSet):
         """Удаление комментария"""
         return super().destroy(request, *args, **kwargs)
 
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({"token": token.key}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class LoginView(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(username=username, password=password)
+
+        if user:
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({"token": token.key}, status=status.HTTP_200_OK)
+        return Response({"error": "Неверное имя пользователя или пароль"}, status=status.HTTP_400_BAD_REQUEST)
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        token = request.auth
+        if token:
+            token.delete()
+            return Response({"message": "Вы успешно вышли из системы"}, status=status.HTTP_200_OK)
+        return Response({"error": "Вы не авторизованы"}, status=status.HTTP_400_BAD_REQUEST)

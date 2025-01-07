@@ -6,7 +6,9 @@ from rest_framework.routers import DefaultRouter
 # Импортируем все необходимые viewsets
 from .views.view_sets import (CommentViewSet, ProjectViewSet, SubtaskViewSet,
                               TaskViewSet, UserBIOViewSet,
-                              UserProfileProjectViewSet, UserProfileViewSet, index, task_summary)
+                              UserProfileProjectViewSet, UserProfileViewSet, index,
+                              task_summary, RegisterView,
+                              LoginView, LogoutView)
 
 router = DefaultRouter()
 
@@ -22,6 +24,9 @@ router.register(r"userprofileproject", UserProfileProjectViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("auth/register/", RegisterView.as_view(), name="register"),
+    path("auth/login/", LoginView.as_view(), name="login"),
+    path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("html/", index, name="index"),
     path('task-summary/', task_summary, name='task_summary'),
     path("task/status/<str:status>/", TaskViewSet.as_view({"get": "list"})),
