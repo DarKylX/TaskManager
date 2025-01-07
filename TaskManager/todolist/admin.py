@@ -7,21 +7,16 @@
 
 
 from datetime import timedelta  # стандартные библиотеки
+
 from django.contrib import admin
+from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
-from django.db.models import Q
 from import_export.admin import ImportExportModelAdmin
 from import_export.formats.base_formats import XLSX  # сторонние пакеты
-from .models import (
-    UserProfile,
-    UserBIO,
-    Project,
-    UserProfileProject,
-    Task,
-    Subtask,
-    Comment,
-)  # локальные модули
+
+from .models import (Comment, Project, Subtask, Task,  # локальные модули
+                     UserBIO, UserProfile, UserProfileProject)
 from .resources import TaskResource
 
 
