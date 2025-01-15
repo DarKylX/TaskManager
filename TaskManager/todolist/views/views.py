@@ -143,42 +143,73 @@ def dashboard(request):
 
 
 
+
 @login_required
 def project_detail(request, pk):
     project = get_object_or_404(Project, pk=pk, members=request.user)
-    tasks = Task.objects.filter(project=project)
-    project_members = UserProfileProject.objects.filter(project=project)
-    return render(request, 'dashboard/project_detail.html', {
+    context = {
         'project': project,
-        'tasks': tasks,
-        'project_members': project_members,
-    })
+        'tasks': Task.objects.filter(project=project),
+        'project_members': project.members.all(),
+        'users': UserProfile.objects.exclude(userprofileproject__project=project),  # Доступные пользователи
+        'project_statuses': dict(Project.STATUS_CHOICES),
+        'task_statuses': dict(Task.STATUS_CHOICES),
+        'task_priorities': dict(Task.PRIORITY_CHOICES),
+
+    }
+    return render(request, 'dashboard/project_detail.html', context)
+
+
+@login_required
+def update_project(request, pk):
+    project = get_object_or_404(Project, pk=pk, members=request.user)
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        status = request.POST.get('status')
+
+        if not all([name, description, status]):
+            messages.error(request, 'Все обязательные поля должны быть заполнены')
+            return redirect('project_detail', pk=pk)
+
+        try:
+            project.name = name
+            project.description = description.strip()
+            project.status = status
+            project.save()
+            messages.success(request, 'Проект успешно обновлен')
+
+        except Exception as e:
+            messages.error(request, f'Ошибка при обновлении проекта: {str(e)}')
+
+    return redirect('project_detail', pk=pk)
+
 
 
 @login_required
 def add_comment(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
+    task = get_object_or_404(Task, pk=task_id, project__members=request.user)
     if request.method == 'POST':
-        comment_text = request.POST.get('comment_text')
-        if comment_text:
-            comment = Comment.objects.create(
+        text = request.POST.get('comment_text').strip()
+        if text:
+            Comment.objects.create(
                 task=task,
                 author=request.user,
-                text=comment_text
+                text=text
             )
-            messages.success(request, 'Комментарий успешно добавлен!')
-            return redirect('task_detail', pk=task.id)
-    return redirect('task_detail', pk=task.id)
-
+            messages.success(request, 'Комментарий добавлен')
+        else:
+            messages.error(request, 'Текст комментария не может быть пустым')
+    return redirect('task_detail', pk=task_id)
 
 @login_required
 def delete_comment(request, comment_id):
-    comment = get_object_or_404(Comment, id=comment_id)
-    if comment.author != request.user:
-        return HttpResponseForbidden("Вы не можете удалить этот комментарий")
+    comment = get_object_or_404(Comment, pk=comment_id, author=request.user)
+    task_id = comment.task.id
     comment.delete()
-    messages.success(request, "Комментарий успешно удален")
-    return redirect('task_detail', pk=comment.task.id)
+    messages.success(request, 'Комментарий удален')
+    return redirect('task_detail', pk=task_id)
+
 
 
 def create_project(request):
@@ -287,52 +318,86 @@ def create_task(request):
 
 @login_required
 def task_detail(request, pk):
-    task = get_object_or_404(Task, pk=pk)
-
-    # Проверка прав доступа
-    if not (task.assignee == request.user or task.project.members.filter(pk=request.user.pk).exists()):
-        messages.error(request, 'У вас нет доступа к этой задаче')
-        return redirect('dashboard')
-
-    # Обновление данных задачи через POST-запрос
-    if request.method == 'POST':
-        task.description = request.POST.get('description').strip()
-        task.status = request.POST.get('status')
-        task.assignee = UserProfile.objects.get(pk=request.POST.get('assigned_to'))
-        task.project = Project.objects.get(pk=request.POST.get('project'))
-        task.due_date = request.POST.get('deadline')
-        task.save()
-        messages.success(request, 'Задача успешно обновлена!')
-
-    # Передача контекста
-    projects = Project.objects.filter(members=request.user)
-    users = UserProfile.objects.all()
-    return render(request, 'dashboard/task_detail.html', {
+    task = get_object_or_404(Task, pk=pk, project__members=request.user)
+    context = {
         'task': task,
-        'projects': projects,
-        'users': users
-    })
+        'projects': Project.objects.filter(members=request.user),
+        'users': task.project.members.all(),
+        'task_statuses': dict(Task.STATUS_CHOICES),
+        'task_priorities': dict(Task.PRIORITY_CHOICES),
+        'comments': task.comments.all().order_by('-created_at'),
+        'history': task.get_history_changes(),
+
+    }
+    return render(request, 'dashboard/task_detail.html', context)
+
+
+@login_required
+def update_task(request, pk):
+    task = get_object_or_404(Task, pk=pk, project__members=request.user)
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        status = request.POST.get('status')
+        priority = request.POST.get('priority')
+        category = request.POST.get('category')
+        due_date = request.POST.get('due_date')
+
+        if not all([name, description, status, priority, category, due_date]):
+            messages.error(request, 'Все обязательные поля должны быть заполнены')
+            return redirect('task_detail', pk=pk)
+
+        try:
+            task.name = name
+            task.description = description.strip()
+            task.status = status
+            task.priority = priority
+            task.category = category
+            task.due_date = due_date
+
+            assignee_id = request.POST.get('assignee')
+            if assignee_id:
+                task.assignee = get_object_or_404(UserProfile, pk=assignee_id)
+
+            task.save()
+            messages.success(request, 'Задача успешно обновлена')
+
+        except Exception as e:
+            messages.error(request, f'Ошибка при обновлении задачи: {str(e)}')
+
+    return redirect('task_detail', pk=pk)
+
 
 
 @login_required
 def delete_task(request, pk):
-    task = get_object_or_404(Task, pk=pk, assignee=request.user)
+    task = get_object_or_404(Task, pk=pk, project__members=request.user)
     project_id = task.project.id
     task.delete()
-    messages.success(request, 'Задача успешно удалена!')
+    messages.success(request, 'Задача успешно удалена')
     return redirect('project_detail', pk=project_id)
+
 
 @login_required
 def add_member(request, project_id):
     project = get_object_or_404(Project, pk=project_id, members=request.user)
     if request.method == 'POST':
-        user_id = request.POST.get('user_id')
-        user = get_object_or_404(UserProfile, pk=user_id)
-        UserProfileProject.objects.create(project=project, user_profile=user)
-        messages.success(request, 'Участник успешно добавлен в проект.')
-        return redirect('project_detail', pk=project_id)
-    users = UserProfile.objects.exclude(id__in=project.members.all())
-    return render(request, 'dashboard/add_member.html', {'project': project, 'users': users})
+        user_id = request.POST.get('user')  # Форма должна передавать 'user'
+        try:
+            user = UserProfile.objects.get(pk=user_id)
+            if UserProfileProject.objects.filter(user_profile=user, project=project).exists():
+                messages.warning(request, 'Этот пользователь уже является участником проекта.')
+            else:
+                UserProfileProject.objects.create(
+                    user_profile=user,  # Имя поля как в модели UserProfileProject
+                    project=project
+                )
+                messages.success(request, 'Участник успешно добавлен.')
+        except UserProfile.DoesNotExist:
+            messages.error(request, 'Пользователь не найден.')
+    return redirect('project_detail', pk=project_id)
+
+
 
 @login_required
 def remove_member(request, project_id, user_id):
