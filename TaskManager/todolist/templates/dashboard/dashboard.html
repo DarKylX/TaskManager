@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard | Task Manager{% endblock %}
+
+{% block content %}
+<!-- Page Heading -->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Главная страница</h1>
+</div>
+
+<!-- Content Row -->
+<div class="row">
+    <!-- Projects Column -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Мои проекты</h5>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createProjectModal">
+                    + Новый проект
+                </button>
+            </div>
+            <div class="card-body">
+                {% if projects %}
+                    {% for project in projects %}
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ project.name }}</h6>
+                            <p class="card-text small">{{ project.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge {% if project.status == 'NEW' %}bg-info{% elif project.status == 'IN_PROGRESS' %}bg-warning{% else %}bg-success{% endif %}">
+                                    {{ project.get_status_display }}
+                                </span>
+                                <a href="{% url 'project_detail' project.pk %}" class="btn btn-sm btn-outline-primary">Подробнее</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">У вас пока нет проектов</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks Column -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Мои задачи</h5>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+                    + Новая задача
+                </button>
+            </div>
+            <div class="card-body">
+                {% if tasks %}
+                    {% for task in tasks %}
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ task.name }}</h6>
+                            <p class="card-text small">{{ task.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-info">{{ task.project.name }}</span>
+                                <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-outline-primary">Подробнее</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">У вас пока нет задач</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно создания проекта -->
+<div class="modal fade" id="createProjectModal" tabindex="-1" aria-labelledby="createProjectModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createProjectModalLabel">Создание проекта</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{% url 'create_project' %}" method="POST">
+        <div class="modal-body">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="name" class="form-label">Название</label>
+            <input type="text" class="form-control" name="name" maxlength="100" required>
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label">Описание</label>
+            <textarea class="form-control" name="description" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="status" class="form-label">Статус</label>
+            <select class="form-select" name="status" required>
+              <option value="NEW">Новый</option>
+              <option value="IN_PROGRESS">Выполняется</option>
+              <option value="DONE">Завершенный</option>
+            </select>
+          </div>
+             <div class="mb-3">
+                <label for="members" class="form-label">Участники</label>
+                <select class="form-select" name="members" id="members" multiple>
+                    {% for user in users %}
+                        <option value="{{ user.id }}">
+                            {% if user.get_full_name %}
+                                {{ user.get_full_name }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+          <button type="submit" class="btn btn-primary">Создать проект</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно создания задачи -->
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createTaskModalLabel">Создание задачи</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{% url 'create_task' %}" method="POST">
+        <div class="modal-body">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="name" class="form-label">Название</label>
+            <input type="text" class="form-control" name="name" maxlength="100" required>
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label">Описание</label>
+            <textarea class="form-control" name="description" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="status" class="form-label">Статус</label>
+            <select class="form-select" name="status" required>
+              <option value="NEW">Новая</option>
+              <option value="BACKLOG">Бэклог</option>
+              <option value="IN_PROGRESS">Выполняется</option>
+              <option value="DONE">Завершена</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="priority" class="form-label">Приоритет</label>
+            <select class="form-select" name="priority" required>
+              <option value="1">1 приоритет</option>
+              <option value="2">2 приоритет</option>
+              <option value="3">3 приоритет</option>
+              <option value="4">4 приоритет</option>
+              <option value="5">5 приоритет</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="due_date" class="form-label">Крайний срок</label>
+            <input type="date" class="form-control" name="due_date" min="{{ today|date:'Y-m-d' }}"  value="{{ today|date:'Y-m-d' }}"
+required>
+          </div>
+          <div class="mb-3">
+            <label for="project" class="form-label">Проект</label>
+            <select class="form-select" name="project" required>
+              {% for project in projects %}
+                <option value="{{ project.id }}">{{ project.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="assignee" class="form-label">Исполнитель</label>
+            <select class="form-select" name="assignee" id="assignee">
+            <option value="">Выберите исполнителя</option>
+                {% for user in users %}
+                    <option value="{{ user.id }}">
+                        {% if user.get_full_name %}
+                            {{ user.get_full_name }}
+                        {% else %}
+                            {{ user.username }}
+                        {% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="task_category" class="form-label">Категория</label>
+            <input type="text" class="form-control" id="task_category" name="category"
+                   maxlength="100" required {% if task %}value="{{ task.category }}"{% endif %}>
+          </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+          <button type="submit" class="btn btn-primary">Создать задачу</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
