@@ -27,7 +27,7 @@ from simple_history.utils import update_change_reason
 from ..filters import TaskFilter, UserBIOFilter
 from ..models import (Comment, Project, Subtask, Task, UserBIO, UserProfile,
                       UserProfileProject)
-from ..serializers.auth_serializers import RegisterSerializer
+from ..serializers.RegisterSerializer import RegisterSerializer
 from ..serializers.todolists import (CommentSerializer,
                                      HistoricalTaskSerializer,
                                      ProjectSerializer,
@@ -248,6 +248,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """Удаление проекта"""
         return super().destroy(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        project = self.get_object()
+        if not project.members.filter(pk=request.user.pk).exists():
+            return Response({"error": "У вас нет доступа к этому проекту"}, status=status.HTTP_403_FORBIDDEN)
+        return super().retrieve(request, *args, **kwargs)
 
 
 class UserProfileProjectViewSet(viewsets.ModelViewSet):
