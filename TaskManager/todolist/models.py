@@ -209,6 +209,7 @@ class Task(models.Model):
         null=True,
         blank=True,
         verbose_name="Исполнитель",
+        related_name="assigned_tasks"
     )
     category = models.CharField("Категория", max_length=100)
 
