@@ -52,6 +52,10 @@
                     + Новая задача
                 </button>
             </div>
+            <div class="statistics">
+                 Всего задач: {{ request.user.assigned_tasks.total_tasks }}
+            </div>
+
             <div class="card-body">
                 {% if tasks %}
                     {% for task in tasks %}
