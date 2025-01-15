@@ -21,29 +21,48 @@ from simple_history.models import HistoricalRecords
 class UserProfile(AbstractUser):
     """Модель UserProfile"""
 
-    email = models.EmailField(max_length=320, verbose_name="Электронная почта")
+    # Существующие поля
+    email = models.EmailField(
+        max_length=320,
+        verbose_name="Электронная почта",
+    )
 
-    def set_password(self, raw_password):
-        """Функция установления пароля"""
-        self.password = make_password(raw_password)
+    avatar = models.ImageField(
+        upload_to='avatars/',
+        verbose_name="Аватар",
+        blank=True,
+        null=True
+    )
 
-    def check_password(self, raw_password):
-        """Функция проверки пароля"""
+    date_updated = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Дата обновления"
+    )
 
-        return check_password(raw_password, self.password)
+    def save(self, *args, **kwargs):
+        """Хэш паролей"""
+        if self._state.adding and not self.password.startswith('pbkdf2_sha256'):
+            self.set_password(self.password)
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        """Функция возвращает имя пользователя"""
-        return str(self.username)
+        return self.get_full_name() or self.username
 
     class Meta:
-        # pylint: disable=too-few-public-methods
-        """Meta"""
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
+        ordering = ['-date_joined']
 
     history = HistoricalRecords()
-    #objects = UserProfileManager()
+
+    # Если нужны дополнительные методы
+    def get_tasks(self):
+        """Получить все задачи пользователя"""
+        return self.task_set.all()
+
+    def get_projects(self):
+        """Получить все проекты пользователя"""
+        return self.project_set.all()
 
 
 class UserBIO(models.Model):
@@ -183,8 +202,7 @@ class Task(models.Model):
     created_at = models.DateField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateField(auto_now=True, verbose_name="Дата обновления")
     project = models.ForeignKey(
-        Project, on_delete=models.CASCADE, verbose_name="Проект"
-    )
+        Project, on_delete=models.CASCADE, verbose_name="Проект", related_name='tasks')
     assignee = models.ForeignKey(
         UserProfile,
         on_delete=models.SET_NULL,
@@ -194,9 +212,40 @@ class Task(models.Model):
     )
     category = models.CharField("Категория", max_length=100)
 
+    def get_history_changes(self):
+        """Метод для получения изменений в читаемом виде"""
+        changes = []
+        records = self.history.all()
+        for i in range(len(records) - 1):
+            new_record = records[i]
+            old_record = records[i + 1]
+            delta = new_record.diff_against(old_record)
+
+            changes_list = []
+            for change in delta.changes:
+                if change.field == 'updated_at':
+                    continue
+                field_name = self._meta.get_field(change.field).verbose_name
+                changes_list.append(f"{field_name}: с '{change.old}' на '{change.new}'")
+
+            if changes_list:
+                changes.append({
+                    'date': new_record.history_date,
+                    'changes': ', '.join(changes_list)
+                })
+        return changes
+
     history = HistoricalRecords()
 
     objects = TaskManager()
+
+    def clean(self):
+        super().clean()
+        if self.due_date < timezone.now().date():
+            raise ValidationError("Дата выполнения не может быть в прошлом.")
+
+        if Task.objects.filter(name=self.name, assignee=self.assignee).exists():
+            raise ValidationError("У вас уже есть задача с таким названием.")
 
     def validate_subtasks_count(self):
         """Проверка количества подзадач перед сохранением"""
@@ -273,7 +322,7 @@ class Comment(models.Model):
     author = models.ForeignKey(
         UserProfile, on_delete=models.CASCADE, verbose_name="Автор"
     )
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, verbose_name="Задача")
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, verbose_name="Задача", related_name="comments")  # pylint: disable=invalid-name)
 
     def __str__(self):
         """Функция возвращает текст комментария"""

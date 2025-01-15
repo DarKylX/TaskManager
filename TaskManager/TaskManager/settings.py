@@ -147,6 +147,17 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+LOGIN_URL = 'login'  # Теперь Django будет использовать наш URL для логина
+LOGIN_REDIRECT_URL = 'dashboard'  # Куда перенаправлять после успешного входа
+LOGOUT_REDIRECT_URL = 'login'  # Куда перенаправлять после выхода
+
+CSRF_COOKIE_SECURE = False  # Установите True в продакшене
+SESSION_COOKIE_SECURE = False  # Установите True в продакшене
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 SWAGGER_SETTINGS = {
