@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
-
-{% block title %}Dashboard | Task Manager{% endblock %}
+{% load custom_tags %}
+{% load custom_filters %}
+{% block title %}Главная страница | Task Manager{% endblock %}
 
 {% block content %}
 <!-- Page Heading -->
@@ -13,6 +14,7 @@
 <div class="row">
     <!-- Projects Column -->
     <div class="col-md-6">
+        {% show_project_stats %}
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Мои проекты</h5>
@@ -45,38 +47,118 @@
 
     <!-- Tasks Column -->
     <div class="col-md-6">
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Мои задачи</h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createTaskModal">
-                    + Новая задача
-                </button>
-            </div>
-            <div class="statistics">
-                 Всего задач: {{ request.user.assigned_tasks.total_tasks }}
-            </div>
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Мои задачи</h5>
+            <button type="button" class="btn btn-warning btn-sm me-2" data-bs-toggle="modal" data-bs-target="#overdueTasksModal">
+                Просроченные задачи
+                {% get_overdue_tasks request.user as overdue_tasks %}
+                {% with overdue_count=overdue_tasks|length %}
+                    {% if overdue_count > 0 %}
+                        <span class="badge bg-danger ms-1">{{ overdue_count }}</span>
+                    {% endif %}
+                {% endwith %}
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+                + Новая задача
+            </button>
+        </div>
+        <div class="statistics ms-3 mt-2 fw-bold fs-5">
+            Всего задач: {{ request.user.assigned_tasks.total_tasks }}
+        </div>
 
-            <div class="card-body">
-                {% if tasks %}
-                    {% for task in tasks %}
-                    <div class="card mb-2">
-                        <div class="card-body">
-                            <h6 class="card-title">{{ task.name }}</h6>
-                            <p class="card-text small">{{ task.description }}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="badge bg-info">{{ task.project.name }}</span>
-                                <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-outline-primary">Подробнее</a>
-                            </div>
+        <div class="card-body">
+            {% if tasks %}
+                {% regroup tasks by get_status_display as status_list %}
+
+                {% for status in status_list %}
+                    <div class="status-group mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0 fw-bold">{{ status.grouper }}</h6>
+                            <span class="badge bg-info fs-6">
+                                {% count_tasks_by_status status.grouper request.user %}
+                            </span>
                         </div>
+
+                        {% for task in status.list %}
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ task.name }}</h6>
+                                    <p class="card-text small">{{ task.description }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-info">{{ task.project.name }}</span>
+                                        <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-outline-primary">Подробнее</a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted">У вас пока нет задач</p>
-                {% endif %}
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">У вас пока нет задач</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<!-- Модальное окно для просроченных задач -->
+<div class="modal fade" id="overdueTasksModal" tabindex="-1" aria-labelledby="overdueTasksModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="overdueTasksModalLabel">Просроченные задачи</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                    {% get_overdue_tasks request.user as overdue_tasks %}
+                    {% if overdue_tasks %}
+                        {% regroup overdue_tasks by get_status_display as overdue_status_list %}
+
+                        {% for status in overdue_status_list %}
+                            <div class="status-group mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0 fw-bold">{{ status.grouper }}</h6>
+                                    <span class="badge bg-danger fs-6">
+                                        {{ status.list|length }} просроченных
+                                    </span>
+                                </div>
+
+                                {% for task in status.list %}
+                                    <div class="card mb-2">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h6 class="card-title mb-0">{{ task.name }}</h6>
+                                                <span class="badge bg-danger">
+                                                    {{ task.due_date|days_overdue }}
+                                                </span>
+                                            </div>
+                                            <p class="card-text small">{{ task.description }}</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge bg-info">{{ task.project.name }}</span>
+                                                <div>
+                                                    <small class="text-muted me-2">
+                                                        Срок: {{ task.due_date|date:"d.m.Y" }}
+                                                    </small>
+                                                    <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-outline-primary">
+                                                        Подробнее
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">Просроченных задач нет</p>
+                    {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
             </div>
         </div>
     </div>
 </div>
+
 
 <!-- Модальное окно создания проекта -->
 <div class="modal fade" id="createProjectModal" tabindex="-1" aria-labelledby="createProjectModalLabel" aria-hidden="true">

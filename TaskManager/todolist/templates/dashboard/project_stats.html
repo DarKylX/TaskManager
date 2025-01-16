@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div class="stats-cards mb-4">
+    <div class="row g-2">
+        <div class="col-6">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Всего проектов</h6>
+                    <h2 class="card-title mb-0 text-primary">{{ total_projects }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="card border-success">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Завершено</h6>
+                    <h2 class="card-title mb-0 text-success">{{ completed_projects }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Активных</h6>
+                    <h2 class="card-title mb-0 text-warning">{{ active_projects }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Срочных задач</h6>
+                    <h2 class="card-title mb-0 text-danger">{{ urgent_tasks }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

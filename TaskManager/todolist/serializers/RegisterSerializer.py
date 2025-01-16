@@ -19,6 +19,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Пароли не совпадают"})
+
+        email = attrs.get('email')
+        if get_user_model().objects.filter(email=email).exists():
+            raise serializers.ValidationError({"email": "Пользователь с таким email уже существует"})
+
         return attrs
 
     def create(self, validated_data):
