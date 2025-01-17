@@ -40,9 +40,6 @@ from ..serializers.todolists import (CommentSerializer,
 logger = logging.getLogger("todolist")
 
 
-def index(request):
-    return render(request, 'index.html')
-
 class UserProfileViewSet(viewsets.ModelViewSet):
     """Вьюсет профилей"""
 
@@ -313,17 +310,6 @@ class StandardResultsSetPagination(PageNumberPagination):
     page_size_query_param = "page_size"
     max_page_size = 100
 
-
-def task_summary(request):
-    """
-    Агрегирует данные о задачах и возвращает их в шаблон.
-    """
-    task_data = {
-        "total_tasks": Task.objects.total_tasks(),
-        "completed_tasks": Task.objects.filter(status="DONE").count(),
-        "in_progress_tasks": Task.objects.filter(status="IN_PROGRESS").count(),
-    }
-    return render(request, "task_summary.html", {"task_data": task_data})
 
 class TaskViewSet(viewsets.ModelViewSet):
     """Вьюсет задач"""

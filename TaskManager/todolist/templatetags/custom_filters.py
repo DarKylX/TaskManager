@@ -9,7 +9,7 @@ def days_until(value):
     if not value:
         return ""
     delta = value - datetime.now().date()
-    days = delta.days
+
     def get_days_label(days):
         if days % 100 in [11, 12, 13, 14]:
             return 'дней'

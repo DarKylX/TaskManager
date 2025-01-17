@@ -14,7 +14,9 @@ from django.contrib.auth import login
 
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from ..models import Project, Task, Comment, UserProfile, UserProfileProject
+
+from ..forms import UserProfileForm, UserBIOForm
+from ..models import Project, Task, Comment, UserProfile, UserProfileProject, UserBIO
 from ..serializers.RegisterSerializer import RegisterSerializer
 from datetime import datetime
 
@@ -130,14 +132,13 @@ class LogoutView(APIView):
 @login_required
 def dashboard(request):
     context = {
-        'projects': Project.objects.filter(members=request.user),
-        'tasks': Task.objects.filter(assignee=request.user),
-        'users': UserProfile.objects.all().order_by('username'),  # или order_by('first_name')
+        'projects': Project.objects.filter(members=request.user).prefetch_related('members'),
+        'tasks': Task.objects.filter(assignee=request.user).select_related('project', 'assignee'),
+        'users': UserProfile.objects.all().order_by('username'),
         'task_statuses': dict(Task.STATUS_CHOICES),
         'task_priorities': dict(Task.PRIORITY_CHOICES),
         'project_statuses': dict(Project.STATUS_CHOICES),
         'today': timezone.now().date(),
-
     }
     return render(request, 'dashboard/dashboard.html', context)
 
@@ -406,3 +407,30 @@ def remove_member(request, project_id, user_id):
     UserProfileProject.objects.filter(project=project, user_profile=user).delete()
     messages.success(request, 'Участник успешно удален из проекта.')
     return redirect('project_detail', pk=project_id)
+
+
+@login_required
+def profile_settings(request):
+    user = request.user
+    try:
+        bio = user.bio
+    except UserBIO.DoesNotExist:
+        bio = UserBIO.objects.create(user=user)
+
+    if request.method == 'POST':
+        profile_form = UserProfileForm(request.POST, instance=user)
+        bio_form = UserBIOForm(request.POST, request.FILES, instance=bio)
+
+        if profile_form.is_valid() and bio_form.is_valid():
+            profile_form.save()
+            bio_form.save()
+            messages.success(request, 'Профиль успешно обновлен')
+            return redirect('profile_settings')
+    else:
+        profile_form = UserProfileForm(instance=user)
+        bio_form = UserBIOForm(instance=bio)
+
+    return render(request, 'dashboard/profile_settings.html', {
+        'profile_form': profile_form,
+        'bio_form': bio_form
+    })

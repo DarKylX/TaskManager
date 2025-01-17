@@ -12,10 +12,15 @@ def count_tasks_by_status(status_display, user):
     Подсчитывает количество задач для определенного статуса
     status_display - отображаемое имя статуса (например "В работе")
     """
-    # Получаем словарь статусов в обратном порядке (имя: код)
+    # Получаем словарь статусов в обратном порядке (имя: код) # k = "NEW", v = "Новая"
     status_dict = {v: k for k, v in Task.STATUS_CHOICES}
-
+#     status_dict = {
+#     "Новая": "NEW",
+#     "В работе": "IN_PROGRESS",
+#     "Завершена": "DONE"
+# }
     # Получаем код статуса по отображаемому имени
+    # Например, если status_display = "В работе" ернет "IN_PROGRESS"
     status_code = status_dict.get(status_display)
 
     if status_code:

@@ -27,13 +27,6 @@ class UserProfile(AbstractUser):
         verbose_name="Электронная почта",
     )
 
-    avatar = models.ImageField(
-        upload_to='avatars/',
-        verbose_name="Аватар",
-        blank=True,
-        null=True
-    )
-
     date_updated = models.DateTimeField(
         auto_now=True,
         verbose_name="Дата обновления"
@@ -84,6 +77,13 @@ class UserBIO(models.Model):
         max_length=20, choices=ROLE_CHOICES, default="USER", verbose_name="Роль"
     )
     age = models.IntegerField("Возраст")
+
+    avatar = models.ImageField(
+        upload_to='avatars/',
+        verbose_name="Аватар",
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         """Возвращает корректное отображение названия в админке"""
@@ -261,7 +261,7 @@ class Task(models.Model):
     class Meta:
         # pylint: disable=too-few-public-methods
         """ Meta """
-        verbose_name = "Задача"
+        verbose_name = "задачу"
         verbose_name_plural = "Задачи"
         ordering = ("due_date",)
 

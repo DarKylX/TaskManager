@@ -11,7 +11,7 @@
         <div class="container">
             <a class="navbar-brand" href="{% url 'dashboard' %}">Task Manager</a>
             <div class="navbar-nav ms-auto">
-                <span class="nav-item nav-link">{{ user.username }}</span>
+                <a class="nav-link" href="{% url 'profile_settings' %}">{{ user.username }}</a>
                 <a class="nav-link" href="{% url 'logout' %}">Выход</a>
             </div>
         </div>
