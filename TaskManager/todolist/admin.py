@@ -87,7 +87,32 @@ class TaskAdmin(ImportExportModelAdmin):  # pylint: disable=too-many-ancestors
         "assignee",
         "created_at",
         "updated_at",
+        "has_attachment",
+        "has_reference",
+        "get_days_until",
     )
+
+    @admin.display(description='Дней до дедлайна')
+    def get_days_until(self, obj):
+        if obj.due_date:
+            delta = obj.due_date - timezone.now().date()
+            if delta.days < 0:
+                return "Просрочено"
+            return delta.days
+        return "-"
+
+    def has_attachment(self, obj):
+        return bool(obj.attachment)
+
+    has_attachment.boolean = True
+    has_attachment.short_description = "Файл"
+
+    def has_reference(self, obj):
+        return bool(obj.reference_link)
+
+    has_reference.boolean = True
+    has_reference.short_description = "Ссылка"
+
     search_fields = ("name", "description")
     list_filter = ("status", "priority", HighPriorityFilter, "due_date", "assignee")
     readonly_fields = ("created_at", "updated_at")
@@ -206,6 +231,22 @@ class ProjectAdmin(admin.ModelAdmin):
     list_filter = ("status",)
     search_fields = ("name", "description")
     inlines = [TaskInline, UserProfileProjectInline]
+    actions = ['generate_pdf_report']
+
+    @admin.action(description='Сгенерировать PDF отчет')
+    def generate_pdf_report(self, request, queryset):
+        # Если выбран один проект
+        if queryset.count() == 1:
+            project = queryset.first()
+            pdf = project.get_pdf_report()
+
+            if pdf:
+                response = HttpResponse(pdf, content_type='application/pdf')
+                filename = f"Report of a project {project.id} {timezone.now().strftime('%Y%m%d')}.pdf"
+                response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                return response
+
+        self.message_user(request, 'Выберите один проект для генерации отчета')
 
 
 @admin.register(UserProfileProject)
