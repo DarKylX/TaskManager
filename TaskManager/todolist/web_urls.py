@@ -27,5 +27,6 @@ urlpatterns = [
     path('project/<int:project_id>/add_member/', views.add_member, name='add_member'),
     path('project/<int:project_id>/remove-member/<int:user_id>/', views.remove_member, name='remove_member'),
     path('profile/settings/', views.profile_settings, name='profile_settings'),
-
+    path('subtask/<int:subtask_id>/update/', views.update_subtask, name='update_subtask'),
+    path('subtask/<int:subtask_id>/delete/', views.delete_subtask, name='delete_subtask'),
 ]

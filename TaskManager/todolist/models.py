@@ -92,6 +92,8 @@ class UserBIO(models.Model):
         null=True
     )
 
+    bio_description = models.CharField(verbose_name="Расскажите о себе", max_length=100, null=True)
+
     def __str__(self):
         """Возвращает корректное отображение названия в админке"""
         return f"О пользователе {self.user.username}"  # pylint: disable=no-member

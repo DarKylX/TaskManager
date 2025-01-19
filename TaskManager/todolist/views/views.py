@@ -1,6 +1,7 @@
+from django.db.models import Q
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import HttpResponseForbidden, JsonResponse, HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
@@ -15,8 +16,8 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-from ..forms import UserProfileForm, UserBIOForm
-from ..models import Project, Task, Comment, UserProfile, UserProfileProject, UserBIO
+from ..forms import UserProfileForm, UserBIOForm, SubtaskForm
+from ..models import Project, Task, Comment, UserProfile, UserProfileProject, UserBIO, Subtask
 from ..serializers.RegisterSerializer import RegisterSerializer
 from datetime import datetime
 
@@ -131,15 +132,29 @@ class LogoutView(APIView):
 # Web Views
 @login_required
 def dashboard(request):
+    search_query = request.GET.get('search', '')
+    # Получаем все задачи
+    tasks = Task.objects.filter(assignee=request.user).select_related('project', 'assignee')
+
+    # Если есть поисковый запрос, фильтруем задачи
+    if search_query:
+        tasks = tasks.filter(
+            Q(name__icontains=search_query) |  # Поиск по названию
+            Q(description__icontains=search_query)  # Поиск по описанию
+        ).distinct()  # Убираем возможные дубликаты
+
     context = {
         'projects': Project.objects.filter(members=request.user).prefetch_related('members'),
-        'tasks': Task.objects.filter(assignee=request.user).select_related('project', 'assignee'),
+        'tasks': tasks,
         'users': UserProfile.objects.all().order_by('username'),
         'task_statuses': dict(Task.STATUS_CHOICES),
         'task_priorities': dict(Task.PRIORITY_CHOICES),
         'project_statuses': dict(Project.STATUS_CHOICES),
         'today': timezone.now().date(),
+        'search_query': search_query,
+
     }
+
     return render(request, 'dashboard/dashboard.html', context)
 
 
@@ -320,6 +335,30 @@ def create_task(request):
 @login_required
 def task_detail(request, pk):
     task = get_object_or_404(Task, pk=pk, project__members=request.user)
+    # Получение подзадач с использованием различных методов
+    subtasks = task.subtask_set.all()
+    subtasks_count = subtasks.count()
+    has_subtasks = subtasks.exists()
+
+    # Получение названий подзадач
+    subtask_names = subtasks.values_list('name', flat=True)
+
+    # Поиск подзадач, содержащих определенный текст
+    search_query = request.GET.get('search', '')
+    if search_query:
+        subtasks = subtasks.filter(name__icontains=search_query)
+
+    if request.method == 'POST':
+        form = SubtaskForm(request.POST)
+        if form.is_valid():
+            subtask = form.save(commit=False)
+            subtask.task = task
+            subtask.save()
+            messages.success(request, 'Подзадача успешно добавлена')
+            return HttpResponseRedirect(request.path)
+    else:
+        form = SubtaskForm()
+
     context = {
         'task': task,
         'projects': Project.objects.filter(members=request.user),
@@ -327,11 +366,38 @@ def task_detail(request, pk):
         'task_statuses': dict(Task.STATUS_CHOICES),
         'task_priorities': dict(Task.PRIORITY_CHOICES),
         'comments': task.comments.all().order_by('-created_at'),
+        'subtasks': subtasks,
+        'form': form,
+        'subtasks_count': subtasks_count,
+        'has_subtasks': has_subtasks,
+        'subtask_names': subtask_names,
         'history': task.get_history_changes(),
 
     }
     return render(request, 'dashboard/task_detail.html', context)
 
+
+def update_subtask(request, subtask_id):
+    subtask = get_object_or_404(Subtask, id=subtask_id)
+
+    if request.method == 'POST':
+        status = request.POST.get('status')
+        if status:
+            # Используем update()
+            Subtask.objects.filter(id=subtask_id).update(status=status)
+            messages.success(request, 'Статус подзадачи обновлен')
+
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+
+def delete_subtask(request, subtask_id):
+    subtask = get_object_or_404(Subtask, id=subtask_id)
+
+    # Используем delete()
+    subtask.delete()
+    messages.success(request, 'Подзадача удалена')
+
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 @login_required
 def update_task(request, pk):
@@ -390,7 +456,7 @@ def add_member(request, project_id):
                 messages.warning(request, 'Этот пользователь уже является участником проекта.')
             else:
                 UserProfileProject.objects.create(
-                    user_profile=user,  # Имя поля как в модели UserProfileProject
+                    user_profile=user,
                     project=project
                 )
                 messages.success(request, 'Участник успешно добавлен.')

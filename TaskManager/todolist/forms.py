@@ -1,5 +1,5 @@
 from django import forms
-from .models import UserProfile, UserBIO
+from .models import UserProfile, UserBIO, Subtask
 
 
 class UserProfileForm(forms.ModelForm):
@@ -38,7 +38,7 @@ class UserProfileForm(forms.ModelForm):
 class UserBIOForm(forms.ModelForm):
     class Meta:
         model = UserBIO
-        fields = ['company', 'role', 'age', 'avatar']
+        fields = ['company', 'role', 'age', 'avatar', "bio_description"]
         widgets = {
             'company': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -56,13 +56,19 @@ class UserBIOForm(forms.ModelForm):
             'avatar': forms.FileInput(attrs={
                 'class': 'form-control',
                 'accept': 'image/*'
-            })
+            }),
+            'bio_description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Расскажите о себе'
+            }),
         }
         labels = {
             'company': 'Компания',
             'role': 'Роль',
             'age': 'Возраст',
-            'avatar': 'Фото профиля'
+            'avatar': 'Фото профиля',
+            'bio_description': "Доп. информация"
         }
 
     def clean_age(self):
@@ -86,3 +92,63 @@ class UserBIOForm(forms.ModelForm):
 
         # Делаем поля необязательными, если нужно
         self.fields['avatar'].required = False
+
+
+class SubtaskForm(forms.ModelForm):
+    class Meta:
+        model = Subtask
+        fields = ['name', 'description', 'status']
+        exclude = ['task']  # Исключаем поле task, оно будет заполняться автоматически
+
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Введите название подзадачи'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Описание подзадачи'
+            }),
+            'status': forms.Select(attrs={
+                'class': 'form-select'
+            })
+        }
+
+        labels = {
+            'name': 'Название подзадачи',
+            'description': 'Описание',
+            'status': 'Статус'
+        }
+
+        help_texts = {
+            'name': 'Введите краткое название подзадачи',
+            'description': 'Подробно опишите, что нужно сделать',
+            'status': 'Выберите текущий статус подзадачи'
+        }
+
+        error_messages = {
+            'name': {
+                'required': 'Это поле обязательно для заполнения',
+                'max_length': 'Название слишком длинное'
+            },
+            'description': {
+                'required': 'Необходимо добавить описание'
+            }
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        task = self.instance.task if self.instance else None
+
+        if task and task.subtask_set.count() >= 5:
+            raise forms.ValidationError(
+                "Невозможно добавить подзадачу. Достигнут максимум (5 подзадач)."
+            )
+        return cleaned_data
+
+    class Media:
+        css = {
+            'all': ('css/subtask_form.css',)
+        }
+        js = ('js/subtask_form.js',)
