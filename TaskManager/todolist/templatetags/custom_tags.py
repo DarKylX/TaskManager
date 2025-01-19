@@ -14,11 +14,11 @@ def count_tasks_by_status(status_display, user):
     """
     # Получаем словарь статусов в обратном порядке (имя: код) # k = "NEW", v = "Новая"
     status_dict = {v: k for k, v in Task.STATUS_CHOICES}
-#     status_dict = {
-#     "Новая": "NEW",
-#     "В работе": "IN_PROGRESS",
-#     "Завершена": "DONE"
-# }
+    #     status_dict = {
+    #     "Новая": "NEW",
+    #     "В работе": "IN_PROGRESS",
+    #     "Завершена": "DONE"
+    # }
     # Получаем код статуса по отображаемому имени
     # Например, если status_display = "В работе" ернет "IN_PROGRESS"
     status_code = status_dict.get(status_display)
@@ -44,7 +44,7 @@ def get_overdue_tasks(user):
     return Task.objects.filter(
         assignee=user,
         due_date__lt=timezone.now().date(),
-        status__in=['NEW', 'BACKLOG', 'IN_PROGRESS']
+        status__in=["NEW", "BACKLOG", "IN_PROGRESS"],
     )
 
 
@@ -73,24 +73,24 @@ def days_overdue(due_date):
     return f"Просрочено на {days} {day_word}"
 
 
-@register.inclusion_tag('dashboard/project_stats.html', takes_context=True)
+@register.inclusion_tag("dashboard/project_stats.html", takes_context=True)
 def show_project_stats(context):
     """
     Показывает статистику по проектам пользователя
     """
-    user = context['request'].user
+    user = context["request"].user
     projects = Project.objects.filter(members=user)
 
     stats = {
-        'total_projects': projects.count(),
-        'active_projects': projects.filter(status__in=["NEW", "IN_PROGRESS"]).count(),
-        'completed_projects': projects.filter(status='DONE').count(),
-        'total_tasks': Task.objects.filter(project__in=projects).count(),
-        'urgent_tasks': Task.objects.filter(
+        "total_projects": projects.count(),
+        "active_projects": projects.filter(status__in=["NEW", "IN_PROGRESS"]).count(),
+        "completed_projects": projects.filter(status="DONE").count(),
+        "total_tasks": Task.objects.filter(project__in=projects).count(),
+        "urgent_tasks": Task.objects.filter(
             project__in=projects,
-            priority__in=['4', '5'],
-            status__in=['NEW', 'IN_PROGRESS']
-        ).count()
+            priority__in=["4", "5"],
+            status__in=["NEW", "IN_PROGRESS"],
+        ).count(),
     }
 
     return stats

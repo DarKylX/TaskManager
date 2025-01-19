@@ -48,7 +48,7 @@ urlpatterns = [
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
     path("api-token-auth/", views.obtain_auth_token),
     path("api/", include("todolist.urls")),
-    path('', include('todolist.web_urls'))
+    path("", include("todolist.web_urls")),
 ]
 
 if settings.DEBUG:

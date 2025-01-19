@@ -1,4 +1,5 @@
 """ Периодичесукие задачи """
+
 import logging
 
 from celery import shared_task
@@ -24,7 +25,7 @@ def delete_expired_tasks():
 
 @shared_task(bind=True)
 def send_task_reminders(_self):
-    """Отправляет письма о сроке выполнения задач, которые наступят в течение дня """
+    """Отправляет письма о сроке выполнения задач, которые наступят в течение дня"""
     # logger.info("Задача send_task_reminders начата")
     # print("Задача send_task_reminders начата")  # Для явного вывода
 
@@ -66,7 +67,7 @@ def send_task_reminders(_self):
 
 @shared_task
 def archive_completed_tasks():
-    """Архивирует завершенные задачи """
+    """Архивирует завершенные задачи"""
     try:
         # Логирование начала выполнения задачи
         logger.info("Задача 'archive_completed_tasks' начата.")
@@ -94,6 +95,6 @@ def archive_completed_tasks():
 
 @shared_task
 def delete_inactive_users():
-    """Удаляет пользователей, которые не входили в систему за последние 6 месяцев """
+    """Удаляет пользователей, которые не входили в систему за последние 6 месяцев"""
     six_months_ago = timezone.now() - timedelta(days=180)
     UserProfile.objects.filter(last_login__lt=six_months_ago, is_staff=False).delete()

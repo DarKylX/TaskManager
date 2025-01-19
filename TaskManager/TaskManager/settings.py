@@ -98,8 +98,7 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME":
-            "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
@@ -148,12 +147,12 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
-LOGIN_URL = 'login'  # Теперь Django будет использовать наш URL для логина
-LOGIN_REDIRECT_URL = 'dashboard'  # Куда перенаправлять после успешного входа
-LOGOUT_REDIRECT_URL = 'login'  # Куда перенаправлять после выхода
+LOGIN_URL = "login"  # Теперь Django будет использовать наш URL для логина
+LOGIN_REDIRECT_URL = "dashboard"  # Куда перенаправлять после успешного входа
+LOGOUT_REDIRECT_URL = "login"  # Куда перенаправлять после выхода
 
 CSRF_COOKIE_SECURE = False  # Установите True в продакшене
 SESSION_COOKIE_SECURE = False  # Установите True в продакшене

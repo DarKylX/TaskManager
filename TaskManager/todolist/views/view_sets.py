@@ -25,17 +25,27 @@ from django.contrib.auth import authenticate
 from simple_history.utils import update_change_reason
 
 from ..filters import TaskFilter, UserBIOFilter
-from ..models import (Comment, Project, Subtask, Task, UserBIO, UserProfile,
-                      UserProfileProject)
+from ..models import (
+    Comment,
+    Project,
+    Subtask,
+    Task,
+    UserBIO,
+    UserProfile,
+    UserProfileProject,
+)
 from ..serializers.RegisterSerializer import RegisterSerializer
-from ..serializers.todolists import (CommentSerializer,
-                                     HistoricalTaskSerializer,
-                                     ProjectSerializer,
-                                     SubtaskCreateSerializer,
-                                     SubtaskSerializer, TaskSerializer,
-                                     UserBiosSerializer,
-                                     UserProfileProjectSerializer,
-                                     UserProfileSerializer)
+from ..serializers.todolists import (
+    CommentSerializer,
+    HistoricalTaskSerializer,
+    ProjectSerializer,
+    SubtaskCreateSerializer,
+    SubtaskSerializer,
+    TaskSerializer,
+    UserBiosSerializer,
+    UserProfileProjectSerializer,
+    UserProfileSerializer,
+)
 
 logger = logging.getLogger("todolist")
 
@@ -125,7 +135,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         """
-            Получение конкретного профиля с использованием кеширования
+        Получение конкретного профиля с использованием кеширования
         """
         pk = kwargs.get("pk")
         cache_key = f"user_profile_{pk}"
@@ -249,7 +259,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         project = self.get_object()
         if not project.members.filter(pk=request.user.pk).exists():
-            return Response({"error": "У вас нет доступа к этому проекту"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": "У вас нет доступа к этому проекту"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         return super().retrieve(request, *args, **kwargs)
 
 
@@ -332,7 +345,9 @@ class TaskViewSet(viewsets.ModelViewSet):
             queryset = Task.objects.all().order_by("id")
             task_ids = list(queryset.values_list("id", flat=True))
             cache.set(cache_key, task_ids, timeout=60 * 15)
-            logger.debug(f"[CACHE SET] Ключ '{cache_key}' установлен со значением: {task_ids}")
+            logger.debug(
+                f"[CACHE SET] Ключ '{cache_key}' установлен со значением: {task_ids}"
+            )
             logger.debug(f"[CACHE SET] Задачи сохранены в кеш: {task_ids}")
         return queryset
 
@@ -627,8 +642,10 @@ class CommentViewSet(viewsets.ModelViewSet):
         """Удаление комментария"""
         return super().destroy(request, *args, **kwargs)
 
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -637,22 +654,32 @@ class RegisterView(APIView):
             return Response({"token": token.key}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class LoginView(APIView):
     def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
+        username = request.data.get("username")
+        password = request.data.get("password")
         user = authenticate(username=username, password=password)
 
         if user:
             token, _ = Token.objects.get_or_create(user=user)
             return Response({"token": token.key}, status=status.HTTP_200_OK)
-        return Response({"error": "Неверное имя пользователя или пароль"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "Неверное имя пользователя или пароль"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
+
     def post(self, request):
         token = request.auth
         if token:
             token.delete()
-            return Response({"message": "Вы успешно вышли из системы"}, status=status.HTTP_200_OK)
-        return Response({"error": "Вы не авторизованы"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "Вы успешно вышли из системы"}, status=status.HTTP_200_OK
+            )
+        return Response(
+            {"error": "Вы не авторизованы"}, status=status.HTTP_400_BAD_REQUEST
+        )

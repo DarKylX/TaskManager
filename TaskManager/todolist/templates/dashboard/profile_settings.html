@@ -15,9 +15,11 @@
             <div class="card">
                 <div class="card-body text-center">
                     {% if user.bio.avatar %}
-                        <img src="{{ user.bio.avatar.url }}" class="rounded-circle img-fluid mb-3" style="max-width: 150px;">
+                    <img src="{{ user.bio.avatar.url }}" class="rounded-circle img-fluid mb-3"
+                         style="max-width: 150px;">
                     {% else %}
-                        <img src="{% static 'images/default-avatar.png' %}" class="rounded-circle img-fluid mb-3" style="max-width: 150px;">
+                    <img src="{% static 'images/default-avatar.png' %}" class="rounded-circle img-fluid mb-3"
+                         style="max-width: 150px;">
                     {% endif %}
                     <h5 class="card-title">{{ user.get_full_name }}</h5>
                     <p class="card-text">{{ user.bio.role }}</p>

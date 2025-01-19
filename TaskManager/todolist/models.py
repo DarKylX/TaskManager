@@ -1,4 +1,5 @@
 """ Models """
+
 import os
 from io import BytesIO
 from django.contrib.auth.models import AbstractUser
@@ -25,6 +26,7 @@ from django.conf import settings
 #     def get_by_natural_key(self, email):
 #         return self.get(email=email)
 
+
 class UserProfile(AbstractUser):
     """Модель UserProfile"""
 
@@ -34,14 +36,11 @@ class UserProfile(AbstractUser):
         verbose_name="Электронная почта",
     )
 
-    date_updated = models.DateTimeField(
-        auto_now=True,
-        verbose_name="Дата обновления"
-    )
+    date_updated = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 
     def save(self, *args, **kwargs):
         """Хэш паролей"""
-        if self._state.adding and not self.password.startswith('pbkdf2_sha256'):
+        if self._state.adding and not self.password.startswith("pbkdf2_sha256"):
             self.set_password(self.password)
         super().save(*args, **kwargs)
 
@@ -51,7 +50,7 @@ class UserProfile(AbstractUser):
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
-        ordering = ['-date_joined']
+        ordering = ["-date_joined"]
 
     history = HistoricalRecords()
 
@@ -86,13 +85,12 @@ class UserBIO(models.Model):
     age = models.IntegerField("Возраст")
 
     avatar = models.ImageField(
-        upload_to='avatars/',
-        verbose_name="Аватар",
-        blank=True,
-        null=True
+        upload_to="avatars/", verbose_name="Аватар", blank=True, null=True
     )
 
-    bio_description = models.CharField(verbose_name="Расскажите о себе", max_length=100, null=True)
+    bio_description = models.CharField(
+        verbose_name="Расскажите о себе", max_length=100, null=True
+    )
 
     def __str__(self):
         """Возвращает корректное отображение названия в админке"""
@@ -143,7 +141,6 @@ class Project(models.Model):
 
     history = HistoricalRecords()
 
-
     def get_pdf_report(self):
         """Generates PDF report for the project"""
         if not self.tasks.exists():
@@ -153,14 +150,14 @@ class Project(models.Model):
         PROJECT_STATUS_TRANSLATION = {
             "NEW": "New",
             "IN_PROGRESS": "In Progress",
-            "DONE": "Done"
+            "DONE": "Done",
         }
 
         TASK_STATUS_TRANSLATION = {
             "NEW": "New",
             "BACKLOG": "Backlog",
             "IN_PROGRESS": "In Progress",
-            "DONE": "Done"
+            "DONE": "Done",
         }
 
         PRIORITY_TRANSLATION = {
@@ -168,42 +165,44 @@ class Project(models.Model):
             "2": "Priority 2",
             "3": "Priority 3",
             "4": "Priority 4",
-            "5": "Priority 5"
+            "5": "Priority 5",
         }
 
         # Настройка шрифта
-        font_path = os.path.join(settings.STATIC_ROOT, 'fonts', 'arial unicode ms.otf')
+        font_path = os.path.join(settings.STATIC_ROOT, "fonts", "arial unicode ms.otf")
         if os.path.exists(font_path):
             print(f"Font file exists at: {font_path}")
         else:
             print(f"Font file not found at: {font_path}")
-        pdfmetrics.registerFont(TTFont('arial unicode ms', font_path))
-        pisa.DEFAULT_FONT = 'arial unicode ms'
+        pdfmetrics.registerFont(TTFont("arial unicode ms", font_path))
+        pisa.DEFAULT_FONT = "arial unicode ms"
 
         # Подготовка данных проекта
         project_data = {
-            'name': self.name,
-            'status': PROJECT_STATUS_TRANSLATION.get(self.status, self.status),
-            'created_at': self.created_at,
-            'description': self.description
+            "name": self.name,
+            "status": PROJECT_STATUS_TRANSLATION.get(self.status, self.status),
+            "created_at": self.created_at,
+            "description": self.description,
         }
 
         # Подготовка данных задач с переводом
         tasks_translated = []
         for task in self.tasks.all():
-            tasks_translated.append({
-                'name': task.name,
-                'status': TASK_STATUS_TRANSLATION.get(task.status, task.status),
-                'priority': PRIORITY_TRANSLATION.get(task.priority, task.priority),
-                'due_date': task.due_date
-            })
+            tasks_translated.append(
+                {
+                    "name": task.name,
+                    "status": TASK_STATUS_TRANSLATION.get(task.status, task.status),
+                    "priority": PRIORITY_TRANSLATION.get(task.priority, task.priority),
+                    "due_date": task.due_date,
+                }
+            )
 
         # Template preparation
-        template = get_template('project_report.html')
+        template = get_template("project_report.html")
         context = {
-            'project': project_data,  # теперь передаем как project
-            'tasks': tasks_translated,
-            'members': self.members.all()
+            "project": project_data,  # теперь передаем как project
+            "tasks": tasks_translated,
+            "members": self.members.all(),
         }
 
         html = template.render(context)
@@ -211,10 +210,12 @@ class Project(models.Model):
         # PDF generation
         pdf_content = BytesIO()
         status = pisa.CreatePDF(
-            BytesIO(html.encode('utf-8')),
+            BytesIO(html.encode("utf-8")),
             dest=pdf_content,
-            encoding='utf-8',
-            link_callback=lambda uri, rel: os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ""))
+            encoding="utf-8",
+            link_callback=lambda uri, rel: os.path.join(
+                settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, "")
+            ),
         )
         print(f"Text encoding check: {self.name.encode('utf-8')}")
 
@@ -262,7 +263,8 @@ class TaskManager(models.Manager):
 
     def total_tasks(self):
         """Возвращает общее количество задач."""
-        return self.aggregate(total=Count('id'))['total']
+        return self.aggregate(total=Count("id"))["total"]
+
 
 class Task(models.Model):
     """Модель Task"""
@@ -295,10 +297,10 @@ class Task(models.Model):
     updated_at = models.DateField(auto_now=True, verbose_name="Дата обновления")
     attachment = models.FileField(
         "Прикрепленный файл",
-        upload_to='task_attachments/%Y/%m/%d/',
+        upload_to="task_attachments/%Y/%m/%d/",
         blank=True,
         null=True,
-        help_text="Прикрепите файлы к задаче (документы, изображения и т.д.)"
+        help_text="Прикрепите файлы к задаче (документы, изображения и т.д.)",
     )
 
     reference_link = models.URLField(
@@ -306,19 +308,33 @@ class Task(models.Model):
         max_length=200,
         blank=True,
         null=True,
-        help_text="Укажите ссылку на внешний ресурс (например, GitHub, Confluence)"
+        help_text="Укажите ссылку на внешний ресурс (например, GitHub, Confluence)",
     )
     project = models.ForeignKey(
-        Project, on_delete=models.CASCADE, verbose_name="Проект", related_name='tasks')
+        Project, on_delete=models.CASCADE, verbose_name="Проект", related_name="tasks"
+    )
     assignee = models.ForeignKey(
         UserProfile,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         verbose_name="Исполнитель",
-        related_name="assigned_tasks"
+        related_name="assigned_tasks",
     )
     category = models.CharField("Категория", max_length=100)
+
+    @property
+    def get_subtasks(self):
+        """Получить все подзадачи"""
+        return (
+            self.subtasks.all()
+        )  # используем related_name='subtasks' из модели Subtask
+
+    def validate_subtasks_count(self):
+        """Проверка количества подзадач"""
+        subtask_count = self.subtasks.count()  # используем related_name='subtasks'
+        if subtask_count > 5:
+            raise ValidationError({"subtasks": "Максимальное количество подзадач - 5"})
 
     def get_history_changes(self):
         """Метод для получения изменений в читаемом виде"""
@@ -331,16 +347,18 @@ class Task(models.Model):
 
             changes_list = []
             for change in delta.changes:
-                if change.field == 'updated_at':
+                if change.field == "updated_at":
                     continue
                 field_name = self._meta.get_field(change.field).verbose_name
                 changes_list.append(f"{field_name}: с '{change.old}' на '{change.new}'")
 
             if changes_list:
-                changes.append({
-                    'date': new_record.history_date,
-                    'changes': ', '.join(changes_list)
-                })
+                changes.append(
+                    {
+                        "date": new_record.history_date,
+                        "changes": ", ".join(changes_list),
+                    }
+                )
         return changes
 
     history = HistoricalRecords()
@@ -353,25 +371,28 @@ class Task(models.Model):
         # Проверка даты только для новых задач или при изменении даты
         if self.due_date and not self.pk:  # Для новых задач
             if self.due_date < timezone.now().date():
-                raise ValidationError({'due_date': 'Дата не может быть в прошлом'})
+                raise ValidationError({"due_date": "Дата не может быть в прошлом"})
         elif self.pk:  # Для существующих задач
             original_task = Task.objects.get(pk=self.pk)
             # Проверяем дату только если она была изменена
-            if self.due_date != original_task.due_date and self.due_date < timezone.now().date():
-                raise ValidationError({'due_date': 'Дата не может быть в прошлом'})
+            if (
+                self.due_date != original_task.due_date
+                and self.due_date < timezone.now().date()
+            ):
+                raise ValidationError({"due_date": "Дата не может быть в прошлом"})
 
         # Проверка уникальности имени
         if self.name:
             exists_query = Task.objects.filter(
                 name=self.name,
-                project=self.project  # Добавляем проверку в рамках проекта
+                project=self.project,  # Добавляем проверку в рамках проекта
             )
             if self.pk:
                 exists_query = exists_query.exclude(pk=self.pk)
             if exists_query.exists():
-                raise ValidationError({
-                    'name': 'Задача с таким названием уже существует в данном проекте'
-                })
+                raise ValidationError(
+                    {"name": "Задача с таким названием уже существует в данном проекте"}
+                )
 
     def validate_subtasks_count(self):
         """Проверка количества подзадач перед сохранением"""
@@ -385,7 +406,7 @@ class Task(models.Model):
 
     class Meta:
         # pylint: disable=too-few-public-methods
-        """ Meta """
+        """Meta"""
         verbose_name = "задачу"
         verbose_name_plural = "Задачи"
         ordering = ("due_date",)
@@ -405,21 +426,21 @@ class Subtask(models.Model):
     status = models.CharField(
         "Статус", max_length=20, choices=STATUS_CHOICES, default="NEW"
     )
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, verbose_name="Задача")
+    task = models.ForeignKey(
+        Task, on_delete=models.CASCADE, verbose_name="Задача", related_name="subtasks"
+    )
 
     def clean(self):
         """Проверка количества подзадач перед сохранением"""
-        task = self.task
-        subtask_count = task.subtask_set.count()
-
-        # Если это новая подзадача и количество уже 5
-        if not self.pk and subtask_count >= 5:
-            raise ValidationError(
-                {
-                    "task": "Невозможно добавить подзадачу. \
-                    Достигнут максимум (5 подзадач)."
-                }
-            )
+        if hasattr(self, "task") and self.task:
+            subtask_count = (
+                self.task.subtasks.count()
+            )  # используем related_name='subtasks'
+            if not self.pk and subtask_count >= 5:
+                raise ValidationError(
+                    "Невозможно добавить подзадачу. Достигнут максимум (5 подзадач)."
+                )
+        super().clean()
 
     def save(self, *args, **kwargs):
         """Переопределение метода save для проверки количества подзадач"""
@@ -448,7 +469,9 @@ class Comment(models.Model):
     author = models.ForeignKey(
         UserProfile, on_delete=models.CASCADE, verbose_name="Автор"
     )
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, verbose_name="Задача", related_name="comments")  # pylint: disable=invalid-name)
+    task = models.ForeignKey(
+        Task, on_delete=models.CASCADE, verbose_name="Задача", related_name="comments"
+    )  # pylint: disable=invalid-name)
 
     def __str__(self):
         """Функция возвращает текст комментария"""

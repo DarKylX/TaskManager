@@ -3,7 +3,8 @@ from datetime import datetime
 
 register = template.Library()
 
-@register.filter(name='days_until')
+
+@register.filter(name="days_until")
 def days_until(value):
     """Возвращает количество дней до указанной даты"""
     if not value:
@@ -12,12 +13,12 @@ def days_until(value):
 
     def get_days_label(days):
         if days % 100 in [11, 12, 13, 14]:
-            return 'дней'
+            return "дней"
         if days % 10 == 1:
-            return 'день'
+            return "день"
         if days % 10 in [2, 3, 4]:
-            return 'дня'
-        return 'дней'
+            return "дня"
+        return "дней"
 
     if delta.days < 0:
         return "Просрочено"
@@ -28,14 +29,20 @@ def days_until(value):
     else:
         return f"{delta.days} {get_days_label(delta.days)}"
 
-@register.filter(name='priority_badge')
+
+@register.filter(name="priority_badge")
 def priority_badge(priority):
     """Возвращает класс badge в зависимости от приоритета"""
     classes = {
-        '5': 'badge bg-danger',
-        '4': 'badge bg-danger',
-        '3': 'badge bg-warning text-dark',
-        '2': 'badge bg-warning text-dark',
-        '1': 'badge bg-info text-dark'
+        "5": "badge bg-danger",
+        "4": "badge bg-danger",
+        "3": "badge bg-warning text-dark",
+        "2": "badge bg-warning text-dark",
+        "1": "badge bg-info text-dark",
     }
-    return classes.get(priority, 'badge bg-secondary')
+    return classes.get(priority, "badge bg-secondary")
+
+
+@register.filter
+def split(value, key):
+    return value.split(key)

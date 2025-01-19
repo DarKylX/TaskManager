@@ -15,8 +15,15 @@ from django.utils import timezone
 from import_export.admin import ImportExportModelAdmin
 from import_export.formats.base_formats import XLSX  # сторонние пакеты
 
-from .models import (Comment, Project, Subtask, Task,  # локальные модули
-                     UserBIO, UserProfile, UserProfileProject)
+from .models import (
+    Comment,
+    Project,
+    Subtask,
+    Task,  # локальные модули
+    UserBIO,
+    UserProfile,
+    UserProfileProject,
+)
 from .resources import TaskResource
 
 
@@ -92,7 +99,7 @@ class TaskAdmin(ImportExportModelAdmin):  # pylint: disable=too-many-ancestors
         "get_days_until",
     )
 
-    @admin.display(description='Дней до дедлайна')
+    @admin.display(description="Дней до дедлайна")
     def get_days_until(self, obj):
         if obj.due_date:
             delta = obj.due_date - timezone.now().date()
@@ -231,9 +238,9 @@ class ProjectAdmin(admin.ModelAdmin):
     list_filter = ("status",)
     search_fields = ("name", "description")
     inlines = [TaskInline, UserProfileProjectInline]
-    actions = ['generate_pdf_report']
+    actions = ["generate_pdf_report"]
 
-    @admin.action(description='Сгенерировать PDF отчет')
+    @admin.action(description="Сгенерировать PDF отчет")
     def generate_pdf_report(self, request, queryset):
         # Если выбран один проект
         if queryset.count() == 1:
@@ -241,12 +248,12 @@ class ProjectAdmin(admin.ModelAdmin):
             pdf = project.get_pdf_report()
 
             if pdf:
-                response = HttpResponse(pdf, content_type='application/pdf')
+                response = HttpResponse(pdf, content_type="application/pdf")
                 filename = f"Report of a project {project.id} {timezone.now().strftime('%Y%m%d')}.pdf"
-                response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                response["Content-Disposition"] = f'attachment; filename="{filename}"'
                 return response
 
-        self.message_user(request, 'Выберите один проект для генерации отчета')
+        self.message_user(request, "Выберите один проект для генерации отчета")
 
 
 @admin.register(UserProfileProject)

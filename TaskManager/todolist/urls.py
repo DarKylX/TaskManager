@@ -4,10 +4,18 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 # Импортируем все необходимые viewsets
-from .views.view_sets import (CommentViewSet, ProjectViewSet, SubtaskViewSet,
-                              TaskViewSet, UserBIOViewSet,
-                              UserProfileProjectViewSet, UserProfileViewSet, RegisterView,
-                              LoginView, LogoutView)
+from .views.view_sets import (
+    CommentViewSet,
+    ProjectViewSet,
+    SubtaskViewSet,
+    TaskViewSet,
+    UserBIOViewSet,
+    UserProfileProjectViewSet,
+    UserProfileViewSet,
+    RegisterView,
+    LoginView,
+    LogoutView,
+)
 
 router = DefaultRouter()
 

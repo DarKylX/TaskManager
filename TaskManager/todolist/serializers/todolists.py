@@ -4,8 +4,15 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
 
-from ..models import (Comment, Project, Subtask, Task, UserBIO, UserProfile,
-                      UserProfileProject)
+from ..models import (
+    Comment,
+    Project,
+    Subtask,
+    Task,
+    UserBIO,
+    UserProfile,
+    UserProfileProject,
+)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -187,7 +194,7 @@ class TaskSerializer(serializers.ModelSerializer):
         return updated_task
 
     def validate_subtask_count(self, task):
-        """ Получаем количество подзадач для этой задачи """
+        """Получаем количество подзадач для этой задачи"""
         subtask_count = Subtask.objects.filter(task=task).count()
         # Проверяем, не превышает ли количество подзадач 5
         if subtask_count > 5:

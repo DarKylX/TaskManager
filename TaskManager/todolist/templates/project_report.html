@@ -42,49 +42,49 @@
     </style>
 </head>
 <body>
-    <h2>Report of project: {{ project.name }}</h2>
-    <p>Date: {% now "d.m.Y H:i" %}</p>
+<h2>Report of project: {{ project.name }}</h2>
+<p>Date: {% now "d.m.Y H:i" %}</p>
 
-    <div class="info-section">
-        <h3>Main information</h3>
-        <div class="info-line">
-            <span class="info-label">Status:</span>
-            <span>{{ project.status }}</span>
-        </div>
-        <div class="info-line">
-            <span class="info-label">Date created:</span>
-            <span>{{ project.created_at|date:"d.m.Y" }}</span>
-        </div>
-        <div class="info-line">
-            <span class="info-label">Description:</span>
-            <span>{{ project.description }}</span>
-        </div>
+<div class="info-section">
+    <h3>Main information</h3>
+    <div class="info-line">
+        <span class="info-label">Status:</span>
+        <span>{{ project.status }}</span>
     </div>
+    <div class="info-line">
+        <span class="info-label">Date created:</span>
+        <span>{{ project.created_at|date:"d.m.Y" }}</span>
+    </div>
+    <div class="info-line">
+        <span class="info-label">Description:</span>
+        <span>{{ project.description }}</span>
+    </div>
+</div>
 
-    <div class="info-section">
-        <h3>Tasks</h3>
-        <table>
-            <colgroup>
-                <col style="width: 60%">
-                <col style="width: 15%">
-                <col style="width: 10%">
-                <col style="width: 15%">
-            </colgroup>
-            <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Due date</th>
-            </tr>
-            {% for task in tasks %}
-            <tr>
-                <td>{{ task.name }}</td>
-                <td>{{ task.status }}</td>
-                <td>{{ task.priority }}</td>
-                <td>{{ task.due_date|date:"d.m.Y" }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
+<div class="info-section">
+    <h3>Tasks</h3>
+    <table>
+        <colgroup>
+            <col style="width: 60%">
+            <col style="width: 15%">
+            <col style="width: 10%">
+            <col style="width: 15%">
+        </colgroup>
+        <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Due date</th>
+        </tr>
+        {% for task in tasks %}
+        <tr>
+            <td>{{ task.name }}</td>
+            <td>{{ task.status }}</td>
+            <td>{{ task.priority }}</td>
+            <td>{{ task.due_date|date:"d.m.Y" }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
 </body>
 </html>
