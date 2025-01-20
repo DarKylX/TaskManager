@@ -1,0 +1,17 @@
+/* Основной фон */
+body {
+    background-image: url('/static/images/background.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+}
+.navbar {
+    opacity: 0.7;
+}
+
+navbar-brand {
+    color: white}
+
+a.nav-link {
+    color: white !important;}
+/* Остальные стили */

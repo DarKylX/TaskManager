@@ -5,148 +5,325 @@
 {% block title %}Главная страница | Task Manager{% endblock %}
 
 {% block content %}
-<!-- Page Heading -->
-<div class="d-sm-flex align-items-center justify-content-between mb-4">
+<div class="container mt-4">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+<div class="d-sm-flex align-items-center justify-content-between mb-4 heading">
     <h1 class="h3 mb-0 text-gray-800">Главная страница</h1>
 </div>
 
-<!-- Content Row -->
-<div class="row">
-    <!-- Projects Column -->
-    <div class="col-md-6">
-        {% show_project_stats %}
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Мои проекты</h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                        data-bs-target="#createProjectModal">
-                    + Новый проект
-                </button>
+
+<style>
+    .container-fluid {
+        max-width: 100%;
+        padding: 0 30px;
+    }
+
+    .container.mt-4 {
+        max-width: 100%;
+        padding: 0 30px;
+    }
+
+    .col-md-3 {
+        width: 20%;
+        min-width: 300px;
+    }
+
+    .col-md-9 {
+        width: 80%;
+    }
+
+    .col-md-4 {
+        min-width: 350px;
+    }
+
+    .status-group {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        height: 100%;
+    }
+
+    .task-card {
+        background-color: white;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 10px;
+    }
+
+    .task-columns {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 20px;
+        width: 100%;
+    }
+
+    .project-stats {
+        max-height: none;
+        overflow: visible;
+    }
+
+    <style>
+    .task-columns {
+        display: flex;
+        flex-wrap: wrap; /* Разрешаем перенос на новую строку */
+        gap: 1rem; /* Отступ между колонками */
+    }
+
+    .task-column {
+        flex: 1; /* Колонки занимают доступное пространство поровну */
+        min-width: 300px; /* Минимальная ширина колонки */
+        width: 100%; /* На маленьких экранах займет всю ширину */
+    }
+
+    .status-group {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        height: 100%; /* Чтобы все колонки были одинаковой высоты */
+    }
+
+    /* Медиа-запрос для мобильных устройств */
+    @media (max-width: 768px) {
+        .task-columns {
+            flex-direction: column; /* Колонки становятся вертикальными */
+        }
+
+        .task-column {
+            width: 100%; /* Занимает всю ширину */
+            margin-bottom: 1rem; /* Отступ между колонками */
+        }
+    }
+
+    /* Для планшетов */
+    @media (min-width: 769px) and (max-width: 1200px) {
+        .task-column {
+            flex-basis: calc(50% - 1rem); /* По две колонки в ряд */
+        }
+    }
+/* Медиа-запрос для адаптации левой колонки */
+@media (max-width: 1461px) { /* Или другая точка перелома, где колонки начинают переноситься */
+    .col-md-3 {
+        width: 100% !important; /* Принудительно растягиваем на всю ширину */
+        min-width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .col-md-9 {
+        width: 100%;
+    }
+
+    /* Улучшаем отображение карточек в растянутой колонке */
+    .project-stats .card {
+        width: 100%;
+    }
+
+    /* Опционально: можно сделать карточки в ряд */
+    .project-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+    }
+}
+</style>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Левое меню -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Статистика проектов</h5>
+                </div>
+                <div class="card-body">
+                    {% show_project_stats %}
+                </div>
             </div>
-            <div class="card-body">
-                {% if projects %}
-                {% for project in projects %}
-                <div class="card mb-2">
-                    <div class="card-body">
-                        <h6 class="card-title">{{ project.name }}</h6>
-                        <p class="card-text small">{{ project.description }}</p>
-                        <div class="d-flex justify-content-between align-items-center">
+
+            <!-- Статистика задач -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Статистика задач</h5>
+                </div>
+                <div class="card-body">
+                    <div class="statistics mb-3">
+                        <p>Всего задач: {{ request.user.assigned_tasks.total_tasks }}</p>
+
+                    </div>
+              <!-- Кнопка срочных задач -->
+                    <button type="button" class="btn btn-warning btn-sm w-100 mb-2" data-bs-toggle="modal"
+                            data-bs-target="#urgentTasksModal">
+                        Срочные задачи
+                        {% get_urgent_tasks request.user as urgent_tasks %}
+                        {% with urgent_count=urgent_tasks|length %}
+                        {% if urgent_count > 0 %}
+                        <span class="badge bg-danger ms-1">{{ urgent_count }}</span>
+                        {% endif %}
+                        {% endwith %}
+                    </button>
+                    <!-- Кнопка просроченных задач -->
+                    <button type="button" class="btn btn-warning btn-sm w-100" data-bs-toggle="modal"
+                            data-bs-target="#overdueTasksModal">
+                        Просроченные задачи
+                        {% get_overdue_tasks request.user as overdue_tasks %}
+                        {% with overdue_count=overdue_tasks|length %}
+                        {% if overdue_count > 0 %}
+                        <span class="badge bg-danger ms-1">{{ overdue_count }}</span>
+                        {% endif %}
+                        {% endwith %}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Список проектов -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Мои проекты</h5>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#createProjectModal">
+                        + Новый проект
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if projects %}
+                    <div class="list-group">
+                        {% for project in projects %}
+                        <a href="{% url 'project_detail' project.pk %}"
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>{{ project.name }}</span>
                                 <span class="badge {% if project.status == 'NEW' %}bg-info{% elif project.status == 'IN_PROGRESS' %}bg-warning{% else %}bg-success{% endif %}">
                                     {{ project.get_status_display }}
                                 </span>
-                            <a href="{% url 'project_detail' project.pk %}" class="btn btn-sm btn-outline-primary">Подробнее</a>
-                        </div>
+                            </div>
+                            <small class="text-muted">{{ project.description|truncatechars:50 }}</small>
+                        </a>
+                        {% endfor %}
                     </div>
+                    {% else %}
+                    <p class="text-muted">У вас пока нет проектов</p>
+                    {% endif %}
                 </div>
-                {% endfor %}
-                {% else %}
-                <p class="text-muted">У вас пока нет проектов</p>
-                {% endif %}
             </div>
         </div>
-    </div>
 
-    <!-- Tasks Column -->
-    <div class="col-md-6">
-
-        <div class="container">
+        <!-- Основная часть с задачами -->
+        <div class="col-md-9">
+            <!-- Поиск и кнопка новой задачи -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Мои задачи</h5>
-                    <div>
-                        <button type="button" class="btn btn-warning btn-sm me-2" data-bs-toggle="modal"
-                                data-bs-target="#overdueTasksModal">
-                            Просроченные задачи
-                            {% get_overdue_tasks request.user as overdue_tasks %}
-                            {% with overdue_count=overdue_tasks|length %}
-                            {% if overdue_count > 0 %}
-                            <span class="badge bg-danger ms-1">{{ overdue_count }}</span>
-                            {% endif %}
-                            {% endwith %}
-                        </button>
-                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                                data-bs-target="#createTaskModal">
-                            + Новая задача
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Статистика -->
-                <div class="statistics ms-3 mt-2 fw-bold fs-5">
-                    Всего задач: {{ request.user.assigned_tasks.total_tasks }}
-                </div>
-
-                <!-- Поиск -->
-                <div class="card-body">
-                    <form method="get" class="d-flex mb-3">
-                        <input type="text"
-                               name="search"
-                               class="form-control me-2"
-                               placeholder="Поиск по названию или описанию..."
-                               value="{{ search_query }}">
+                    <form method="get" class="d-flex flex-grow-1 me-2">
+                        <input type="text" name="search" class="form-control me-2"
+                               placeholder="Поиск по названию или описанию" value="{{ search_query }}">
                         <button type="submit" class="btn btn-primary">Поиск</button>
                         {% if search_query %}
                         <a href="{{ request.path }}" class="btn btn-secondary ms-2">Сбросить</a>
                         {% endif %}
                     </form>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#createTaskModal">
+                        + Новая задача
+                    </button>
+                </div>
+            </div>
 
-                    <!-- Результаты поиска или сгруппированный список задач -->
-                    {% if search_query %}
-                    <h6 class="mb-3">Результаты поиска для "{{ search_query }}"</h6>
-                    {% if tasks %}
-                    {% for task in tasks %}
-                    <div class="card mb-2">
-                        <div class="card-body">
-                            <h6 class="card-title">{{ task.name }}</h6>
-                            <p class="card-text small">{{ task.description|truncatewords:30 }}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-info me-2">{{ task.project.name }}</span>
-                                    <small class="text-muted">Статус: {{ task.get_status_display }}</small>
-                                </div>
-                                <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-outline-primary">Подробнее</a>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                    {% else %}
-                    <p class="text-muted">По вашему запросу ничего не найдено.</p>
-                    {% endif %}
-                    {% else %}
-                    {% if tasks %}
-                    {% regroup tasks by get_status_display as status_list %}
-                    {% for status in status_list %}
-                    <div class="status-group mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+            <!-- Задачи по статусам -->
+            <div class="task-columns">
+                {% regroup tasks by get_status_display as status_list %}
+                {% for status in status_list %}
+                <div class="task-column">
+                    <div class="status-group">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0 fw-bold">{{ status.grouper }}</h6>
                             <span class="badge bg-info fs-6">
-                                    {% count_tasks_by_status status.grouper request.user %}
-                                </span>
+                                {% count_tasks_by_status status.grouper request.user %}
+                            </span>
                         </div>
-
-                        {% for task in status.list %}
+                        {% for task in status.list|dictsort:"status" %}
                         <div class="card mb-2">
                             <div class="card-body">
                                 <h6 class="card-title">{{ task.name }}</h6>
-                                <p class="card-text small">{{ task.description }}</p>
+                                <p class="card-text small">{{ task.description|truncatewords:30 }}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="badge bg-info">{{ task.project.name }}</span>
-                                    <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-outline-primary">Подробнее</a>
+                                    <a href="{% url 'task_detail' task.pk %}"
+                                       class="btn btn-sm btn-outline-primary">Подробнее</a>
                                 </div>
                             </div>
                         </div>
                         {% endfor %}
                     </div>
-                    {% endfor %}
-                    {% else %}
-                    <p class="text-muted">У вас пока нет задач</p>
-                    {% endif %}
-                    {% endif %}
                 </div>
+                {% endfor %}
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Модальное окно для просроченных задач -->
+<!-- Модальное окно для срочных задач -->
+<div class="modal fade" id="urgentTasksModal" tabindex="-1" aria-labelledby="urgentTasksModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="urgentTasksModalLabel">Срочные задачи</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% get_urgent_tasks request.user as urgent_tasks %}
+                {% if urgent_tasks %}
+                {% regroup urgent_tasks by get_status_display as urgent_status_list %}
+
+                {% for status in urgent_status_list %}
+                <div class="status-group mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0 fw-bold">{{ status.grouper }}</h6>
+                        <span class="badge bg-warning fs-6">
+                            {{ status.list|length }} срочных
+                        </span>
+                    </div>
+
+                    {% for task in status.list %}
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="card-title mb-0">{{ task.name }}</h6>
+                                <span class="badge bg-warning">
+                                    {{ task.due_date|days_until }}
+                                </span>
+                            </div>
+                            <p class="card-text small">{{ task.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-info">{{ task.project.name }}</span>
+                                <div>
+                                    <small class="text-muted me-2">
+                                        Срок: {{ task.due_date|date:"d.m.Y" }}
+                                    </small>
+                                    <a href="{% url 'task_detail' task.pk %}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Подробнее
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted text-center">Срочных задач нет</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+   <!-- Модальное окно для просроченных задач -->
         <div class="modal fade" id="overdueTasksModal" tabindex="-1" aria-labelledby="overdueTasksModalLabel"
              aria-hidden="true">
             <div class="modal-dialog modal-lg">
@@ -342,5 +519,4 @@
             </div>
         </div>
 
-
-        {% endblock %}
+{% endblock %}
