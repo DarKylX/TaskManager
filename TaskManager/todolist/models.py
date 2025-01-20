@@ -78,11 +78,11 @@ class UserBIO(models.Model):
     user = models.OneToOneField(
         UserProfile, on_delete=models.CASCADE, related_name="bio"
     )
-    company = models.CharField("Компания", max_length=255)
+    company = models.CharField("Компания", null=True, max_length=255)
     role = models.CharField(
-        max_length=20, choices=ROLE_CHOICES, default="USER", verbose_name="Роль"
+        max_length=20, choices=ROLE_CHOICES, default="USER",  null=True, verbose_name="Роль"
     )
-    age = models.IntegerField("Возраст")
+    age = models.IntegerField("Возраст", null=True)
 
     avatar = models.ImageField(
         upload_to="avatars/", verbose_name="Аватар", blank=True, null=True
@@ -285,7 +285,7 @@ class Task(models.Model):
     ]
 
     name = models.CharField("Название", max_length=100)
-    description = models.TextField("Описание")
+    description = models.TextField("Описание", null=True)
     status = models.CharField(
         "Статус", max_length=20, choices=STATUS_CHOICES, default="NEW"
     )
@@ -422,7 +422,7 @@ class Subtask(models.Model):
     ]
 
     name = models.CharField("Название", max_length=100)
-    description = models.TextField("Описание")
+    description = models.TextField("Описание", null=True)
     status = models.CharField(
         "Статус", max_length=20, choices=STATUS_CHOICES, default="NEW"
     )
