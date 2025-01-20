@@ -1,59 +1,109 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Настройки профиля</title>
-</head>
-<body>
 {% extends 'base.html' %}
 {% load static %}
+
 {% block content %}
 <div class="container mt-4">
-    <div class="row">
-        <!-- Sidebar с аватаром -->
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body text-center">
-                    {% if user.bio.avatar %}
-                    <img src="{{ user.bio.avatar.url }}" class="rounded-circle img-fluid mb-3"
-                         style="max-width: 150px;">
-                    {% else %}
-                    <img src="{% static 'images/default-avatar.png' %}" class="rounded-circle img-fluid mb-3"
-                         style="max-width: 150px;">
-                    {% endif %}
-                    <h5 class="card-title">{{ user.get_full_name }}</h5>
-                    <p class="card-text">{{ user.bio.role }}</p>
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Sidebar с аватаром -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        {% if user.bio.avatar %}
+                        <img src="{{ user.bio.avatar.url }}" class="img-fluid mb-3 rounded-circle"
+                             style="max-width: 150px; object-fit: cover;">
+                        {% else %}
+                        <img src="{% static 'images/default-avatar.webp' %}" class="img-fluid mb-3 rounded-circle"
+                             style="max-width: 150px; object-fit: cover;">
+                        {% endif %}
+                        <h5 class="card-title">{{ user.get_full_name }}</h5>
+                        <p class="card-text">{{ user.bio.role }}</p>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Форма редактирования -->
-        <div class="col-md-9">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title mb-4">Настройки профиля</h4>
-                    <form method="POST" enctype="multipart/form-data">
-                        {% csrf_token %}
+            <!-- Форма редактирования -->
+            <div class="col-md-9">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title mb-4">Настройки профиля</h4>
 
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <h5>Основная информация</h5>
-                                {{ profile_form.as_p }}
-                            </div>
-                            <div class="col-md-6">
-                                <h5>Дополнительная информация</h5>
-                                {{ bio_form.as_p }}
-                            </div>
-                        </div>
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
 
-                        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
-                    </form>
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Основная информация</h5>
+                                    {% for field in profile_form %}
+                                    <div class="mb-3">
+                                        {{ field.label_tag }}
+                                        {{ field }}
+                                        {% if field.help_text %}
+                                        <small class="form-text text-muted">{{ field.help_text }}</small>
+                                        {% endif %}
+                                        {% if field.errors %}
+                                        <div class="alert alert-danger mt-1">
+                                            {{ field.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Дополнительная информация</h5>
+                                    {% for field in bio_form %}
+                                    <div class="mb-3">
+                                        {{ field.label_tag }}
+                                        {{ field }}
+                                        {% if field.help_text %}
+                                        <small class="form-text text-muted">{{ field.help_text }}</small>
+                                        {% endif %}
+
+                                        {% if field.name == 'avatar' and user.bio.avatar %}
+                                        <div class="mt-2">
+                                            <p class="mb-1">Текущий файл:</p>
+                                            <div class="d-flex align-items-center flex-wrap">
+                                                <!-- Добавлен flex-wrap -->
+                                                <div class="text-truncate me-3" style="max-width: 300px;">
+                                                    <!-- Ограничиваем ширину и добавляем троеточие -->
+                                                    <a href="{{ user.bio.avatar.url }}" target="_blank"
+                                                       title="{{ user.bio.avatar.name }}">
+                                                        {{ user.bio.avatar.name }}
+                                                    </a>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="remove_avatar"
+                                                           name="remove_avatar">
+                                                    <label class="form-check-label" for="remove_avatar">
+                                                        Удалить файл
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
+                                        {% if field.errors %}
+                                        <div class="alert alert-danger mt-1">
+                                            {{ field.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+
+
+                                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
-
-</body>
-</html>
+    {% endblock %}

@@ -1,4 +1,6 @@
 from django import forms
+from django.contrib.auth import get_user_model
+
 from .models import UserProfile, UserBIO, Subtask
 
 
@@ -22,6 +24,16 @@ class UserProfileForm(forms.ModelForm):
             "last_name": "Фамилия",
             "email": "Email",
         }
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        user = self.instance
+
+        if email and email != user.email:  # Если email изменился
+            if get_user_model().objects.exclude(id=user.id).filter(email=email).exists():
+                raise forms.ValidationError('Пользователь с таким email уже существует')
+
+        return email
 
     # Добавим метод для инициализации формы с существующими данными
     def __init__(self, *args, **kwargs):
@@ -125,8 +137,7 @@ class SubtaskForm(forms.ModelForm):
             "name": {
                 "required": "Это поле обязательно для заполнения",
                 "max_length": "Название слишком длинное",
-            },
-            "description": {"required": "Необходимо добавить описание"},
+            }
         }
 
     def __init__(self, *args, **kwargs):

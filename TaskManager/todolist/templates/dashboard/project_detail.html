@@ -33,7 +33,7 @@
                     <label for="status" class="form-label">Статус проекта</label>
                     <select class="form-select" id="status" name="status" required>
                         {% for status_code, status_name in project_statuses.items %}
-                        <option value="{{ status_code }}" {% if project.status== status_code %}selected{% endif %}>
+                        <option value="{{ status_code }}" {% if project.status == status_code %}selected{% endif %}>
                             {{ status_name }}
                         </option>
                         {% endfor %}
@@ -194,8 +194,9 @@
 
                         <div class="mb-3">
                             <label for="new_task_due_date" class="form-label">Срок выполнения</label>
-                            <input type="date" class="form-control" id="new_task_due_date"
-                                   name="due_date" required>
+                            <input type="date" class="form-control" id="new_task_due_date" name="due_date" min="{{ today|date:'Y-m-d' }}"
+                                       value="{{ today|date:'Y-m-d' }}"
+                                       required>
                         </div>
                     </div>
                     <div class="modal-footer">

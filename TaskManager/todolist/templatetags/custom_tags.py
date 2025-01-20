@@ -72,6 +72,16 @@ def days_overdue(due_date):
 
     return f"Просрочено на {days} {day_word}"
 
+@register.simple_tag
+def get_urgent_tasks(user):
+    """Получить срочные задачи пользователя"""
+    today = timezone.now()
+    return Task.objects.filter(
+        assignee=user,
+        due_date__gte=today + timezone.timedelta(days=3),  # задачи со сроком до 3 дней
+        status__in=['NEW', 'IN_PROGRESS']  # только новые и в процессе
+    ).order_by('due_date')
+
 
 @register.inclusion_tag("dashboard/project_stats.html", takes_context=True)
 def show_project_stats(context):
@@ -87,10 +97,9 @@ def show_project_stats(context):
         "completed_projects": projects.filter(status="DONE").count(),
         "total_tasks": Task.objects.filter(project__in=projects).count(),
         "urgent_tasks": Task.objects.filter(
-            project__in=projects,
-            priority__in=["4", "5"],
-            status__in=["NEW", "IN_PROGRESS"],
-        ).count(),
+        assignee=user,
+        due_date__gte=timezone.now() + timezone.timedelta(days=3),  # задачи со сроком до 3 дней
+        status__in=['NEW', 'IN_PROGRESS']).order_by('due_date').count(),
     }
 
     return stats

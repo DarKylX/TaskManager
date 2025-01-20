@@ -13,7 +13,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, logout
+from django.contrib.auth import authenticate, logout, get_user_model
 from django.contrib.auth import login
 
 from django.contrib.auth.decorators import login_required
@@ -152,9 +152,9 @@ class LogoutView(APIView):
 def dashboard(request):
     search_query = request.GET.get("search", "")
     # Получаем все задачи
-    tasks = Task.objects.filter(assignee=request.user).select_related(
-        "project", "assignee"
-    )
+    tasks = Task.objects.filter(assignee=request.user) \
+        .select_related("project", "assignee") \
+        .order_by('status') \
 
     if search_query:
         tasks = tasks.filter(
@@ -294,7 +294,7 @@ def create_task(request):
                 [name, description, status, priority, project_id, due_date, category]
             ):
                 messages.error(request, "Все обязательные поля должны быть заполнены")
-                return redirect("dashboard")
+                return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
             # Преобразуем строку даты в объект date
             due_date = datetime.strptime(due_date, "%Y-%m-%d").date()
@@ -302,12 +302,12 @@ def create_task(request):
             # Проверяем, что дата не в прошлом
             if due_date < timezone.now().date():
                 messages.error(request, "Дата выполнения не может быть в прошлом")
-                return redirect("dashboard")
+                return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
             # Проверяем уникальность названия задачи для пользователя
             if Task.objects.filter(name=name, assignee_id=assignee_id).exists():
                 messages.error(request, "У вас уже есть задача с таким названием")
-                return redirect("dashboard")
+                return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
             # Создаем задачу
             task = Task(
@@ -327,7 +327,7 @@ def create_task(request):
             # Сохраняем задачу
             task.save()
 
-            response = redirect("task_detail", pk=task.id)
+            response = HttpResponseRedirect(request.META.get("HTTP_REFERER"))
             messages.success(request, "Задача успешно создана")
             return response
 
@@ -337,13 +337,13 @@ def create_task(request):
             for field, errors in e.message_dict.items():
                 error_messages.extend(errors)
             messages.error(request, f'Ошибка валидации: {", ".join(error_messages)}')
-            return redirect("dashboard")
+            return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
         except Exception as e:
             messages.error(request, f"Ошибка при создании задачи: {str(e)}")
-            return redirect("dashboard")
+            return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
 
-    return redirect("dashboard")
+    return render(request, "dashboard.html")
 
 
 @login_required
@@ -422,7 +422,7 @@ def update_task(request, pk):
         due_date = request.POST.get("due_date")
         task.reference_link = request.POST.get("reference_link") or None
 
-        if not all([name, description, status, priority, category, due_date]):
+        if not all([name, status, priority, category, due_date]):
             messages.error(request, "Все обязательные поля должны быть заполнены")
             return redirect("task_detail", pk=pk)
 
@@ -514,6 +514,22 @@ def profile_settings(request):
         bio_form = UserBIOForm(request.POST, request.FILES, instance=bio)
 
         if profile_form.is_valid() and bio_form.is_valid():
+            # Проверяем email перед сохранением
+            new_email = profile_form.cleaned_data.get('email')
+            if new_email and new_email != user.email:  # Если email изменился
+                if get_user_model().objects.exclude(id=user.id).filter(email=new_email).exists():
+                    profile_form.add_error('email', 'Пользователь с таким email уже существует')
+                    return render(
+                        request,
+                        "dashboard/profile_settings.html",
+                        {"profile_form": profile_form, "bio_form": bio_form},
+                    )
+
+            # Проверяем чекбокс удаления аватара
+            if request.POST.get('remove_avatar') and bio.avatar:
+                bio.avatar.delete()  # Удаляем файл
+                bio.avatar = None    # Очищаем поле
+
             profile_form.save()
             bio_form.save()
             messages.success(request, "Профиль успешно обновлен")
@@ -527,3 +543,5 @@ def profile_settings(request):
         "dashboard/profile_settings.html",
         {"profile_form": profile_form, "bio_form": bio_form},
     )
+
+
