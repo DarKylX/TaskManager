@@ -59,6 +59,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
+    'todolist.middleware.PageVisitMiddleware',
 ]
 
 ROOT_URLCONF = "TaskManager.urls"
@@ -154,8 +155,8 @@ LOGIN_URL = "login"  # Теперь Django будет использовать �
 LOGIN_REDIRECT_URL = "dashboard"  # Куда перенаправлять после успешного входа
 LOGOUT_REDIRECT_URL = "login"  # Куда перенаправлять после выхода
 
-CSRF_COOKIE_SECURE = False  # Установите True в продакшене
-SESSION_COOKIE_SECURE = False  # Установите True в продакшене
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -201,6 +202,12 @@ else:
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         }
     }
+
+PAGEVISITS_SETTINGS = {
+    'MAX_RECORDS': 10000,  # Максимальное количество записей
+    'RETENTION_DAYS': 30,   # Хранить записи не более 30 дней
+    'CLEANUP_BATCH_SIZE': 1000,  # Размер пакета при очистке
+}
 
 # Настройка сессий через Redis (опционально)
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"

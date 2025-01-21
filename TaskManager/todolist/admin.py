@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
 from import_export.admin import ImportExportModelAdmin
+from import_export.formats import base_formats
 from import_export.formats.base_formats import XLSX  # сторонние пакеты
 
 from .models import (
@@ -22,9 +23,9 @@ from .models import (
     Task,  # локальные модули
     UserBIO,
     UserProfile,
-    UserProfileProject,
+    UserProfileProject, UserPageVisit,
 )
-from .resources import TaskResource
+from .resources import TaskResource, UserPageVisitResource
 
 
 class HighPriorityFilter(admin.SimpleListFilter):
@@ -206,6 +207,42 @@ class UserProfileAdmin(admin.ModelAdmin):
     list_display = ("username", "email", "is_staff", "is_active")
     search_fields = ("username", "email")
 
+@admin.register(UserPageVisit)
+class UserPageVisitAdmin(admin.ModelAdmin):
+    resource_class = UserPageVisitResource
+    list_display = ('user', 'path', 'visited_at', 'ip_address')
+    list_filter = ('visited_at', 'path')
+    search_fields = ('user__username', 'path', 'ip_address')
+    date_hierarchy = 'visited_at'
+    readonly_fields = ('user', 'path', 'visited_at', 'ip_address', 'user_agent', 'method')
+    actions = ['export_visits_xlsx']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def export_visits_xlsx(self, request, queryset):
+        """Экспорт выбранных посещений в Excel."""
+        resource = self.resource_class()
+        dataset = resource.export(queryset)
+        file_format = XLSX()
+        response = HttpResponse(
+            file_format.export_data(dataset),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="page_visits.xlsx"'
+        return response
+
+    export_visits_xlsx.short_description = "Экспортировать выбранные записи в Excel"
+
+    def get_export_queryset(self, request):
+        """Возвращает queryset для экспорта."""
+        return self.get_queryset(request).select_related('user')
 
 @admin.register(UserBIO)
 class UserBIOAdmin(admin.ModelAdmin):

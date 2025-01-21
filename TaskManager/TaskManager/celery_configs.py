@@ -44,4 +44,13 @@ app.conf.beat_schedule = {
             minute="0", hour="0", day_of_month="1"
         ),  # Первый день каждого месяца
     },
+    'save-page-visits-every-5-minutes': {
+        'task': 'todolist.tasks.process_page_visits',
+        'schedule': crontab(minute='*'),
+    },
+    'cleanup-old-visits': {
+        'task': 'todolist.tasks.cleanup_old_visits',
+        'schedule': crontab(minute='*/5'),
+    },
+
 }

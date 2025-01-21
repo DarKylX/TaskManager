@@ -2,6 +2,8 @@
 
 import os
 from io import BytesIO
+
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -104,6 +106,24 @@ class UserBIO(models.Model):
 
     history = HistoricalRecords()
 
+User = get_user_model()
+
+
+class UserPageVisit(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    path = models.CharField(max_length=255)
+    visited_at = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    method = models.CharField(max_length=10)
+
+    class Meta:
+        ordering = ['-visited_at']
+        verbose_name = "Посещение страницы"
+        verbose_name_plural = "Посещения страниц"
+
+    def __str__(self):
+        return f"{self.user or 'Аноним'} посетил {self.path} в {self.visited_at}"
 
 class Project(models.Model):
     """Модель Project"""

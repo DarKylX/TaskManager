@@ -1,13 +1,17 @@
 """ Периодичесукие задачи """
-
+import json
 import logging
 
 from celery import shared_task
 from django.conf import settings
+from django.core.cache import cache
 from django.core.mail import send_mail
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.utils.timezone import timedelta
-from .models import Task, UserProfile  # локальные модули
+from django_redis import get_redis_connection
+
+from .models import Task, UserProfile, UserPageVisit  # локальные модули
 
 logger = logging.getLogger(__name__)
 # pylint: disable=logging-fstring-interpolation
@@ -98,3 +102,81 @@ def delete_inactive_users():
     """Удаляет пользователей, которые не входили в систему за последние 6 месяцев"""
     six_months_ago = timezone.now() - timedelta(days=180)
     UserProfile.objects.filter(last_login__lt=six_months_ago, is_staff=False).delete()
+
+
+@shared_task
+def process_page_visits():
+    redis_client = get_redis_connection("default")
+    visits_to_create = []
+
+    while True:
+        # Используем Redis клиент напрямую вместо cache
+        raw_visit = redis_client.rpop('page_visits')
+        if not raw_visit:
+            break
+
+        try:
+            # Для Redis версии 3+ нужно декодировать bytes в строку
+            if isinstance(raw_visit, bytes):
+                raw_visit = raw_visit.decode('utf-8')
+
+            visit_data = json.loads(raw_visit)
+
+            visits_to_create.append(UserPageVisit(
+                user_id=visit_data['user_id'],
+                path=visit_data['path'],
+                ip_address=visit_data['ip_address']
+            ))
+
+            # Записываем батчами по 100 записей
+            if len(visits_to_create) >= 100:
+                UserPageVisit.objects.bulk_create(visits_to_create)
+                visits_to_create = []
+
+        except Exception as e:
+            print(f"Error processing visit: {e}")
+
+    # Записываем оставшиеся записи
+    if visits_to_create:
+        UserPageVisit.objects.bulk_create(visits_to_create)
+
+
+# tasks.py
+@shared_task
+def cleanup_old_visits():
+    from django.conf import settings
+    from django.utils import timezone
+    from django.db import connection
+
+    retention_days = settings.PAGEVISITS_SETTINGS['RETENTION_DAYS']
+    max_records = settings.PAGEVISITS_SETTINGS['MAX_RECORDS']
+    batch_size = settings.PAGEVISITS_SETTINGS['CLEANUP_BATCH_SIZE']
+
+    # Удаляем старые записи
+    cutoff_date = timezone.now() - timezone.timedelta(days=retention_days)
+    UserPageVisit.objects.filter(visited_at__lt=cutoff_date).delete()
+
+    # Проверяем общее количество записей
+    total_records = UserPageVisit.objects.count()
+    if total_records > max_records:
+        # Находим ID, после которого нужно удалить записи
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id FROM todolist_userpagevisit 
+                ORDER BY visited_at DESC 
+                OFFSET %s LIMIT 1
+            """, [max_records])
+            cutoff_id = cursor.fetchone()[0]
+
+        # Удаляем записи пакетами
+        while True:
+            deleted_count = UserPageVisit.objects.filter(
+                id__lt=cutoff_id
+            )[:batch_size].delete()[0]
+            if deleted_count == 0:
+                break
+
+    return {
+        'cleaned_before': cutoff_date,
+        'total_records': UserPageVisit.objects.count()
+    }

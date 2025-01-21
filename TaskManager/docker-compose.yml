@@ -11,7 +11,8 @@ services:
       - .:/app
     environment:
       - DEBUG=True
-      - DOCKERIZED=1  # Добавлено здесь
+      - USE_REDIS=true
+      - DOCKERIZED=1
     depends_on:
       - redis
       - mailhog
@@ -40,7 +41,9 @@ services:
       - .:/app
     environment:
       - DEBUG=True
-      - DOCKERIZED=1  # Добавлено здесь
+      - DOCKERIZED=1
+      - USE_REDIS=true
+
     depends_on:
       - redis
 
@@ -53,6 +56,7 @@ services:
       - .:/app
     environment:
       - DEBUG=True
-      - DOCKERIZED=1  # Добавлено здесь
+      - DOCKERIZED=1
+      - USE_REDIS=true
     depends_on:
       - redis

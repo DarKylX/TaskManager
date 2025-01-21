@@ -1,8 +1,9 @@
 """Экспорт """
+from django.contrib.auth import get_user_model
+from import_export import resources, fields
+from import_export.widgets import ForeignKeyWidget, DateTimeWidget
 
-from import_export import resources
-
-from .models import Task
+from .models import Task, UserPageVisit
 
 
 class TaskResource(resources.ModelResource):
@@ -34,3 +35,23 @@ class TaskResource(resources.ModelResource):
             "CANCELED": "Отменена",
         }
         return status_map.get(task.status, task.status)
+
+
+class UserPageVisitResource(resources.ModelResource):
+    class Meta:
+        model = UserPageVisit
+        fields = ('user', 'path', 'visited_at', 'ip_address')
+        export_order = fields
+
+    user = fields.Field(
+        column_name='user',
+        attribute='user',
+        widget=ForeignKeyWidget(get_user_model(), 'username')
+    )
+
+    visited_at = fields.Field(
+        column_name='visited_at',
+        attribute='visited_at',
+        widget=DateTimeWidget(format='%Y-%m-%d %H:%M:%S')
+    )
+
